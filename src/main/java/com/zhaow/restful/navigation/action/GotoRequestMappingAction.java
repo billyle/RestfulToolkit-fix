@@ -71,8 +71,8 @@ public class GotoRequestMappingAction extends GotoActionBase implements DumbAwar
 
     }
 
-// TODO IDEA 2018 删了？
-//    @Override
+
+   @Override
     protected <T> void showNavigationPopup(AnActionEvent e,
                                            ChooseByNameModel model,
                                            final GotoActionCallback<T> callback,

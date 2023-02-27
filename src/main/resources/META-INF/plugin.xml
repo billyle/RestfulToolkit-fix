@@ -71,7 +71,7 @@
     </change-notes>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/build_number_ranges.html for description -->
-    <idea-version since-build="145.0"/>
+    <idea-version since-build="201.*"/>
 
     <!-- please see http://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
          on how to target different products -->
@@ -101,8 +101,6 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <projectService serviceImplementation="com.zhaow.restful.navigation.action.GotoRequestMappingConfiguration"/>
-        <!-- Add your extensions here -->
-        <!--<productivityFeaturesProvider  implementation="com.zhaow.restful.statistics.RestfulToolkitFeaturesProvider" />-->
         <tipAndTrick feature-id="navigation.popup.service" file="GotoService.html"/>
     </extensions>
 
@@ -231,5 +229,7 @@
               -->
 
     </actions>
-
+    <projectListeners>
+        <listener class="com.zhaow.restful.navigator.MyToolwindowListener" topic="com.intellij.openapi.wm.ex.ToolWindowManagerListener" />
+    </projectListeners>
 </idea-plugin>

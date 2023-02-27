@@ -1,6 +1,5 @@
 package com.zhaow.restful.navigator;
 
-
 import com.intellij.ide.util.treeView.TreeState;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.*;
@@ -9,7 +8,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.WriteExternalException;
 import com.intellij.openapi.wm.ToolWindowAnchor;
 import com.intellij.openapi.wm.ex.ToolWindowEx;
-import com.intellij.openapi.wm.ex.ToolWindowManagerAdapter;
 import com.intellij.openapi.wm.ex.ToolWindowManagerEx;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
@@ -26,189 +24,212 @@ import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.net.URL;
 
-@State(name = "RestServicesNavigator", storages = {@Storage(StoragePathMacros.WORKSPACE_FILE)})
+@State(name = "RestServicesNavigator", storages = { @Storage(StoragePathMacros.WORKSPACE_FILE) })
 public class RestServicesNavigator extends AbstractProjectComponent
-        implements PersistentStateComponent<RestServicesNavigatorState>, ProjectComponent {
-    public static final Logger LOG = Logger.getInstance(RestServicesNavigator.class);
+		implements PersistentStateComponent<RestServicesNavigatorState>, ProjectComponent {
 
-    public static final String TOOL_WINDOW_ID = "RestServices";
-    private static final URL SYNC_ICON_URL = RestServicesNavigator.class.getResource("/actions/refresh.png");
-    protected final Project myProject;
-    //    private JTree myTree;
-    protected RestServiceStructure myStructure;
-    RestServicesNavigatorState myState = new RestServicesNavigatorState();
-    private SimpleTree myTree;
-    private ToolWindowEx myToolWindow;
+	public static final Logger LOG = Logger.getInstance(RestServicesNavigator.class);
 
-    private RestServiceProjectsManager myProjectsManager;
+	public static final String TOOL_WINDOW_ID = "RestServices";
 
-    public RestServicesNavigator(Project myProject, RestServiceProjectsManager projectsManager) {
-        super(myProject);
-        this.myProject = myProject;
-        myProjectsManager = projectsManager;
-    }
+	private static final URL SYNC_ICON_URL = RestServicesNavigator.class.getResource("/actions/refresh.png");
 
+	protected final Project myProject;
 
-    public static RestServicesNavigator getInstance(Project p) {
-        return p.getComponent(RestServicesNavigator.class);
-    }
+	// private JTree myTree;
+	protected RestServiceStructure myStructure;
 
+	RestServicesNavigatorState myState = new RestServicesNavigatorState();
 
-    private void initTree() {
-        myTree = new SimpleTree() {
+	private SimpleTree myTree;
 
+	private ToolWindowEx myToolWindow;
 
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                final JLabel myLabel = new JLabel(
-                        RestfulToolkitBundle.message("toolkit.navigator.nothing.to.display", ToolkitUtil.formatHtmlImage(SYNC_ICON_URL)));
+	private RestServiceProjectsManager myProjectsManager;
 
-                if (myProject.isInitialized()) {
-                    return;
-                }
-                myLabel.setFont(getFont());
-                myLabel.setBackground(getBackground());
-                myLabel.setForeground(getForeground());
-                Rectangle bounds = getBounds();
-                Dimension size = myLabel.getPreferredSize();
-                myLabel.setBounds(0, 0, size.width, size.height);
+	public RestServicesNavigator(Project myProject) {
+		super(myProject);
+		this.myProject = myProject;
+		myProjectsManager = RestServiceProjectsManager.getInstance(myProject);
+	}
 
-                int x = (bounds.width - size.width) / 2;
-                Graphics g2 = g.create(bounds.x + x, bounds.y + 20, bounds.width, bounds.height);
-                try {
-                    myLabel.paint(g2);
-                } finally {
-                    g2.dispose();
-                }
-            }
-        };
-        myTree.getEmptyText().clear();
+	public static RestServicesNavigator getInstance(Project p) {
+		return p.getComponent(RestServicesNavigator.class);
+	}
 
-        myTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
-    }
+	private void initTree() {
+		myTree = new SimpleTree() {
 
-    @Override
-    public void initComponent() {
-        listenForProjectsChanges();
-        ToolkitUtil.runDumbAware(myProject, () -> {
-            if (myProject.isDisposed()) {
-                return;
-            }
-            if (myProject.isOpen()) {
-                initToolWindow();
-            }
-        });
-    }
+			@Override
+			protected void paintComponent(Graphics g) {
+				super.paintComponent(g);
+				final JLabel myLabel = new JLabel(RestfulToolkitBundle.message("toolkit.navigator.nothing.to.display",
+						ToolkitUtil.formatHtmlImage(SYNC_ICON_URL)));
 
-    private void initToolWindow() {
-        final ToolWindowManagerEx manager = ToolWindowManagerEx.getInstanceEx(myProject);
-        myToolWindow = (ToolWindowEx) manager.getToolWindow(TOOL_WINDOW_ID);
-        if (myToolWindow != null) {
-            return;
-        }
+				if (myProject.isInitialized()) {
+					return;
+				}
+				myLabel.setFont(getFont());
+				myLabel.setBackground(getBackground());
+				myLabel.setForeground(getForeground());
+				Rectangle bounds = getBounds();
+				Dimension size = myLabel.getPreferredSize();
+				myLabel.setBounds(0, 0, size.width, size.height);
 
-        initTree();
+				int x = (bounds.width - size.width) / 2;
+				Graphics g2 = g.create(bounds.x + x, bounds.y + 20, bounds.width, bounds.height);
+				try {
+					myLabel.paint(g2);
+				}
+				finally {
+					g2.dispose();
+				}
+			}
+		};
+		myTree.getEmptyText().clear();
 
-        myToolWindow = (ToolWindowEx) manager.registerToolWindow(TOOL_WINDOW_ID, false, ToolWindowAnchor.RIGHT, myProject, true);
-        myToolWindow.setIcon(ToolkitIcons.SERVICE);
+		myTree.getSelectionModel().setSelectionMode(TreeSelectionModel.DISCONTIGUOUS_TREE_SELECTION);
+	}
 
-        JPanel panel = new RestServicesNavigatorPanel(myProject, myTree);
-        final ContentFactory contentFactory = ServiceManager.getService(ContentFactory.class);
-        final Content content = contentFactory.createContent(panel, "", false);
-        ContentManager contentManager = myToolWindow.getContentManager();
-        contentManager.addContent(content);
-        contentManager.setSelectedContent(content, false);
+	@Override
+	public void initComponent() {
+		listenForProjectsChanges();
+		ToolkitUtil.runDumbAware(myProject, () -> {
+			if (myProject.isDisposed()) {
+				return;
+			}
+			if (myProject.isOpen()) {
+				initToolWindow();
+			}
+		});
+	}
 
-        final ToolWindowManagerAdapter listener = new ToolWindowManagerAdapter() {
-            boolean wasVisible = false;
+	private void initToolWindow() {
+		final ToolWindowManagerEx manager = ToolWindowManagerEx.getInstanceEx(myProject);
+		myToolWindow = (ToolWindowEx) manager.getToolWindow(TOOL_WINDOW_ID);
+		if (myToolWindow != null) {
+			return;
+		}
 
-            @Override
-            public void stateChanged() {
-                if (myToolWindow.isDisposed()) {
-                    return;
-                }
-                boolean visible = myToolWindow.isVisible();
-                if (!visible || wasVisible) {
-                    return;
-                }
-                scheduleStructureUpdate();
-                wasVisible = true;
-            }
-        };
-        manager.addToolWindowManagerListener(listener, myProject);
+		initTree();
 
-        //todo: extend toolWindows right click
-/*        ActionManager actionManager = ActionManager.getInstance();
-        DefaultActionGroup group = new DefaultActionGroup();
-        group.add(actionManager.getAction("Maven.GroupProjects"));
-        group.add(actionManager.getAction("Maven.ShowIgnored"));
-        group.add(actionManager.getAction("Maven.ShowBasicPhasesOnly"));
-        group.add(actionManager.getAction("Maven.AlwaysShowArtifactId")); // 默认显示 app serviceName
-        group.add(actionManager.getAction("Maven.ShowVersions")); //
-        myToolWindow.setAdditionalGearActions(group);*/
+		myToolWindow = (ToolWindowEx) manager.registerToolWindow(TOOL_WINDOW_ID, false, ToolWindowAnchor.RIGHT,
+				myProject, true);
+		myToolWindow.setIcon(ToolkitIcons.SERVICE);
 
-    }
+		JPanel panel = new RestServicesNavigatorPanel(myProject, myTree);
+		final ContentFactory contentFactory = ServiceManager.getService(ContentFactory.class);
+		final Content content = contentFactory.createContent(panel, "", false);
+		ContentManager contentManager = myToolWindow.getContentManager();
+		contentManager.addContent(content);
+		contentManager.setSelectedContent(content, false);
 
+		// final ToolWindowManagerAdapter listener = new ToolWindowManagerAdapter() {
+		// boolean wasVisible = false;
+		//
+		// @Override
+		// public void stateChanged() {
+		// if (myToolWindow.isDisposed()) {
+		// return;
+		// }
+		// boolean visible = myToolWindow.isVisible();
+		// if (!visible || wasVisible) {
+		// return;
+		// }
+		// scheduleStructureUpdate();
+		// wasVisible = true;
+		// }
+		// };
+		// manager.addToolWindowManagerListener(listener, myProject);
 
-    public void scheduleStructureUpdate() {
-        scheduleStructureRequest(() -> myStructure.update());
+		// todo: extend toolWindows right click
+		/*
+		 * ActionManager actionManager = ActionManager.getInstance(); DefaultActionGroup
+		 * group = new DefaultActionGroup();
+		 * group.add(actionManager.getAction("Maven.GroupProjects"));
+		 * group.add(actionManager.getAction("Maven.ShowIgnored"));
+		 * group.add(actionManager.getAction("Maven.ShowBasicPhasesOnly"));
+		 * group.add(actionManager.getAction("Maven.AlwaysShowArtifactId")); // 默认显示 app
+		 * serviceName group.add(actionManager.getAction("Maven.ShowVersions")); //
+		 * myToolWindow.setAdditionalGearActions(group);
+		 */
 
-    }
+	}
 
-    private void scheduleStructureRequest(final Runnable r) {
-        if (myToolWindow == null) {
-            return;
-        }
-        ToolkitUtil.runWhenProjectIsReady(myProject, () -> {
-            if (!myToolWindow.isVisible()) {
-                return;
-            }
+	boolean wasVisible = false;
 
-            boolean shouldCreate = myStructure == null;
-            if (shouldCreate) {
-                initStructure();
-            }
+	public void stateChanged() {
+		if (myToolWindow == null) {
+			return;
+		}
+		if (myToolWindow.isDisposed()) {
+			return;
+		}
+		boolean visible = myToolWindow.isVisible();
+		if (!visible || wasVisible) {
+			return;
+		}
+		scheduleStructureUpdate();
+		wasVisible = true;
+	}
 
-            r.run();
-// fixme: compat
-//            if (shouldCreate) {
-//                TreeState.createFrom(myState.treeState).applyTo(myTree);
-//            }
-        });
+	public void scheduleStructureUpdate() {
+		scheduleStructureRequest(() -> myStructure.update());
 
+	}
 
-    }
+	private void scheduleStructureRequest(final Runnable r) {
+		if (myToolWindow == null) {
+			return;
+		}
+		ToolkitUtil.runWhenProjectIsReady(myProject, () -> {
+			if (!myToolWindow.isVisible()) {
+				return;
+			}
 
-    private void initStructure() {
-        myStructure = new RestServiceStructure(myProject, myProjectsManager, myTree);
+			boolean shouldCreate = myStructure == null;
+			if (shouldCreate) {
+				initStructure();
+			}
 
-    }
+			r.run();
+			// fixme: compat
+			// if (shouldCreate) {
+			// TreeState.createFrom(myState.treeState).applyTo(myTree);
+			// }
+		});
 
+	}
 
-    private void listenForProjectsChanges() {
-        //todo :
-    }
+	private void initStructure() {
+		myStructure = new RestServiceStructure(myProject, myProjectsManager, myTree);
 
-    @Nullable
-    @Override
-    public RestServicesNavigatorState getState() {
-        ApplicationManager.getApplication().assertIsDispatchThread();
-        if (myStructure != null) {
-            try {
-                myState.treeState = new Element("root");
-                TreeState.createOn(myTree).writeExternal(myState.treeState);
-            } catch (WriteExternalException e) {
-                LOG.warn(e);
-            }
-        }
-        return myState;
-    }
+	}
 
-    @Override
-    public void loadState(RestServicesNavigatorState state) {
-        myState = state;
-        scheduleStructureUpdate();
-    }
+	private void listenForProjectsChanges() {
+		// todo :
+	}
+
+	@Nullable
+	@Override
+	public RestServicesNavigatorState getState() {
+		ApplicationManager.getApplication().assertIsDispatchThread();
+		if (myStructure != null) {
+			try {
+				myState.treeState = new Element("root");
+				TreeState.createOn(myTree).writeExternal(myState.treeState);
+			}
+			catch (WriteExternalException e) {
+				LOG.warn(e);
+			}
+		}
+		return myState;
+	}
+
+	@Override
+	public void loadState(RestServicesNavigatorState state) {
+		myState = state;
+		scheduleStructureUpdate();
+	}
+
 }
-
