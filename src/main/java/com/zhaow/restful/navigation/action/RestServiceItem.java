@@ -115,6 +115,11 @@ public class RestServiceItem implements NavigationItem {
                 location = className.concat("#").concat(ktNamedFunction.getName());
             }
 
+            // 添加模块名称到位置信息中
+            if (module != null) {
+                location = module.getName() + " | " + location;
+            }
+
             return "(" + location + ")";
         }
 

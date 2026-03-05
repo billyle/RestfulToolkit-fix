@@ -2,6 +2,7 @@ package com.zhaow.restful.common.resolver;
 
 
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
@@ -17,6 +18,8 @@ import com.zhaow.restful.common.spring.RequestMappingAnnotationHelper;
 import com.zhaow.restful.method.RequestPath;
 import com.zhaow.restful.method.action.PropertiesHandler;
 import com.zhaow.restful.navigation.action.RestServiceItem;
+import com.intellij.psi.stubs.StubIndex;
+import com.intellij.psi.stubs.StubIndexKey;
 import org.jetbrains.kotlin.idea.stubindex.KotlinAnnotationsIndex;
 import org.jetbrains.kotlin.psi.KtAnnotationEntry;
 import org.jetbrains.kotlin.psi.KtCallExpression;
@@ -32,6 +35,8 @@ import org.jetbrains.kotlin.psi.KtValueArgumentName;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.List;
 
 public class SpringResolver  extends BaseServiceResolver  {
@@ -146,16 +151,26 @@ public class SpringResolver  extends BaseServiceResolver  {
 
                 /*if (!(psiElement instanceof PsiClass)) continue; // RestController annotation 只出现在 class*/
                 PsiClass psiClass = (PsiClass) psiElement;
+                // 获取模块信息
+                Module module = ModuleUtilCore.findModuleForPsiElement(psiClass);
                 List<RestServiceItem> serviceItemList = getServiceItemList(psiClass);
+                // 为每个item设置模块
+                for (RestServiceItem item : serviceItemList) {
+                    if (module != null) {
+                        item.setModule(module);
+                    }
+                }
                 itemList.addAll(serviceItemList);
             }
 
 
             // kotlin:
-            Collection<KtAnnotationEntry> ktAnnotationEntries = KotlinAnnotationsIndex.getInstance().get(controllerAnnotation.getShortName(), project, globalSearchScope);
+            Collection<KtAnnotationEntry> ktAnnotationEntries = findKotlinAnnotations(controllerAnnotation.getShortName(), project, globalSearchScope);
             for (KtAnnotationEntry ktAnnotationEntry : ktAnnotationEntries) {
                 KtClass ktClass = (KtClass) ktAnnotationEntry.getParent().getParent();
 
+                // 获取模块信息
+                Module module = ModuleUtilCore.findModuleForPsiElement(ktClass);
                 List<RequestPath> classRequestPaths = getRequestPaths(ktClass);
 
                 List<KtNamedFunction> ktNamedFunctions = getKtNamedFunctions(ktClass);
@@ -165,7 +180,11 @@ public class SpringResolver  extends BaseServiceResolver  {
                     for (RequestPath classRequestPath : classRequestPaths) {
                         for (RequestPath requestPath : requestPaths) {
                             requestPath.concat(classRequestPath);
-                            itemList.add(createRestServiceItem(fun, "", requestPath));
+                            RestServiceItem item = createRestServiceItem(fun, "", requestPath);
+                            if (module != null) {
+                                item.setModule(module);
+                            }
+                            itemList.add(item);
                         }
                     }
                 }
@@ -433,6 +452,39 @@ public class SpringResolver  extends BaseServiceResolver  {
         }
 
         return new ArrayList<>();
+    }
+
+    private Collection<KtAnnotationEntry> findKotlinAnnotations(String annotationName, Project project, GlobalSearchScope scope) {
+        try {
+            // Check if Kotlin plugin is available
+            Class<?> kotlinAnnotationsIndexClass = null;
+            try {
+                kotlinAnnotationsIndexClass = Class.forName("org.jetbrains.kotlin.idea.stubindex.KotlinAnnotationsIndex");
+            } catch (ClassNotFoundException e) {
+                // Kotlin plugin not available
+                return Collections.emptyList();
+            }
+            
+            // Try the old way first (for older IntelliJ versions)
+            Method getInstanceMethod = kotlinAnnotationsIndexClass.getMethod("getInstance");
+            Object indexInstance = getInstanceMethod.invoke(null);
+            Method getMethod = kotlinAnnotationsIndexClass.getMethod("get", String.class, Project.class, GlobalSearchScope.class);
+            return (Collection<KtAnnotationEntry>) getMethod.invoke(indexInstance, annotationName, project, scope);
+        } catch (Exception e) {
+            // Handle newer IntelliJ versions where getInstance() is removed
+            try {
+                // Try to access via reflection or alternative method
+                // In newer versions, we might need to use StubIndex directly
+                Class<?> kotlinAnnotationsIndexClass = Class.forName("org.jetbrains.kotlin.idea.stubindex.KotlinAnnotationsIndex");
+                Field keyField = kotlinAnnotationsIndexClass.getDeclaredField("KEY");
+                keyField.setAccessible(true);
+                StubIndexKey<String, KtAnnotationEntry> key = (StubIndexKey<String, KtAnnotationEntry>) keyField.get(null);
+                return StubIndex.getInstance().get(key, annotationName, project, scope);
+            } catch (Exception ex) {
+                // If all else fails, return empty collection
+                return Collections.emptyList();
+            }
+        }
     }
 
 

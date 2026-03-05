@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.editor.colors.FontPreferences;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -38,7 +39,7 @@ import java.util.Map;
 //import com.intellij.openapi.editor.colors.impl.AppEditorFontOptions;
 //import com.intellij.ui.components.JBPanelWithEmptyText;
 
-public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
+public class RestServiceDetail extends JBPanel implements ProjectComponent {
     private static RestServiceDetail restServiceDetail;
     public JTextField urlField;
     public JPanel urlPanel;
@@ -50,19 +51,35 @@ public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
     public RSyntaxTextArea requestBodyTextArea;
     public RSyntaxTextArea responseTextArea;
 
-    private RestServiceDetail() {
+    public RestServiceDetail(Project project) {
         super();
-        initComponent();
+        // Don't call initComponent here, it will be called by IntelliJ after GUI components are bound
     }
 
     public static RestServiceDetail getInstance(Project p) {
         return p.getComponent(RestServiceDetail.class);
     }
 
+    @Override
     public void initComponent() {
         initUI();
         initActions();
         initTab();
+    }
+
+    @Override
+    public void disposeComponent() {
+        // Cleanup if needed
+    }
+
+    @Override
+    public void projectOpened() {
+        // Called when project is opened
+    }
+
+    @Override
+    public void projectClosed() {
+        // Called when project is closed
     }
 
     private void initActions() {
@@ -82,42 +99,16 @@ public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
     }
 
     private void initUI() {
-        urlField.setAutoscrolls(true);
-        urlPanel = new JBPanel();
-        GridLayoutManager mgr = new GridLayoutManager(1, 3);
-        mgr.setHGap(1);
-        mgr.setVGap(1);
-        urlPanel.setLayout(mgr);
-
-        urlPanel.add(methodField,
-                new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_SOUTHEAST, GridConstraints.FILL_BOTH,
-                        GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-                        null, null, null));
-        urlPanel.add(urlField,
-                new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_SOUTHEAST, GridConstraints.FILL_BOTH,
-                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                        null, null, null));
-        urlPanel.add(sendButton,
-                new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_SOUTHEAST, GridConstraints.FILL_BOTH,
-                        GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED,
-                        null, null, null));
-
-        this.setBorder(BorderFactory.createEmptyBorder());
-        this.setLayout(new GridLayoutManager(2, 1));
-
-        this.add(urlPanel,
-                new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
-                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED,
-                        null, null, null));
-        this.add(requestTabbedPane,
-                new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
-                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                        GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-                        null, null, null));
+        // Components are initialized by the form file, just configure them
+        if (urlField != null) {
+            urlField.setAutoscrolls(true);
+        }
     }
 
     private void bindSendButtonActionListener() {
+        if (sendButton == null) {
+            return;
+        }
         sendButton.addActionListener(e -> {
             ProgressManager.getInstance().run(new Task.Backgroundable(null, "Sending Request") {
                 @Override
@@ -169,6 +160,9 @@ public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
     }
 
     private void bindUrlTextActionListener() {
+        if (requestTabbedPane == null || urlField == null || methodField == null) {
+            return;
+        }
         requestTabbedPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -240,6 +234,9 @@ public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
 
 
     public void addRequestTabbedPane(String title, RSyntaxTextArea jTextArea) {
+        if (requestTabbedPane == null) {
+            return;
+        }
 
         if (UIUtil.isUnderDarcula()) {
             jTextArea.setBackground(new Color(0x2B2B2B));
@@ -263,6 +260,9 @@ public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
 
 
     public void addResponseTabPanel(String text) {
+        if (requestTabbedPane == null) {
+            return;
+        }
         //FIXME RSyntaxTextArea 中文乱码
         String responseTabTitle = "Response";
         if (responseTextArea == null) {
@@ -356,6 +356,9 @@ public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
 
 
     public void resetRequestTabbedPane() {
+        if (requestTabbedPane == null) {
+            return;
+        }
         this.requestTabbedPane.removeAll();
         resetTextComponent(requestParamsTextArea);
         resetTextComponent(requestBodyTextArea);
@@ -369,10 +372,16 @@ public class RestServiceDetail extends JBPanel/*WithEmptyText*/{
     }
 
     public void setMethodValue(String method) {
+        if (methodField == null) {
+            return;
+        }
         methodField.setText(String.valueOf(method));
     }
 
     public void setUrlValue(String url) {
+        if (urlField == null) {
+            return;
+        }
         urlField.setText(url);
     }
 

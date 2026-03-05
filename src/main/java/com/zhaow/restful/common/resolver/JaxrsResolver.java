@@ -2,6 +2,7 @@ package com.zhaow.restful.common.resolver;
 
 
 import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiAnnotation;
 import com.intellij.psi.PsiClass;
@@ -95,6 +96,8 @@ public class JaxrsResolver extends BaseServiceResolver  {
                 if (!(psiElement instanceof PsiClass)) continue;
 
                 PsiClass psiClass = (PsiClass) psiElement;
+                // 获取模块信息
+                Module module = ModuleUtilCore.findModuleForPsiElement(psiClass);
                 PsiMethod[] psiMethods = psiClass.getMethods();
 
                 if (psiMethods == null) {
@@ -110,6 +113,9 @@ public class JaxrsResolver extends BaseServiceResolver  {
 
                     for (RequestPath methodUriPath : methodUriPaths) {
                         RestServiceItem item = createRestServiceItem(psiMethod, classUriPath, methodUriPath);
+                        if (module != null) {
+                            item.setModule(module);
+                        }
                         itemList.add(item);
                     }
                 }

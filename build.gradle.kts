@@ -22,7 +22,7 @@ plugins {
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
+        languageVersion.set(JavaLanguageVersion.of(17))
     }
 }
 
@@ -31,15 +31,17 @@ intellij {
     plugins.set(
         listOf(
             "java",
-            "Kotlin",
-            "Spring",
-            "SpringBoot",
+            "com.intellij.java",
+            "org.jetbrains.kotlin",
+            "com.intellij.spring",
+            "com.intellij.spring.boot",
             "properties",
             "yaml"
         )
     )
 //     version = "2021.3"
-     version .set( "2021.1.3")
+//     version .set( "2021.1.3")
+     version.set("2023.3.7")
 //    version.set("2022.1.4")
 //    localPath =
 //        "/Users/jinghong/Library/Application Support/JetBrains/Toolbox/apps/IDEA-U/ch-0/222.3345.90/IntelliJ IDEA.app/Contents"
@@ -48,8 +50,18 @@ intellij {
     downloadSources.set(true)
 }
 
+// 禁用代码instrument，解决JDK路径问题
+tasks.named("instrumentCode") {
+    enabled = false
+}
+
+// 禁用 searchable options 构建，避免 JVM 初始化问题
+tasks.named("buildSearchableOptions") {
+    enabled = false
+}
+
 group = "me.jinghong.restful.toolkit"
-version = "2.0.8"
+version = "2.1.14"
 
 repositories {
     mavenLocal()
