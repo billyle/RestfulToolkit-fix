@@ -21,6 +21,11 @@ public class FeignResolver extends BaseServiceResolver {
         myProject = project;
     }
     
+    public FeignResolver(Module module) {
+        myModule = module;
+        myProject = module.getProject();
+    }
+    
     @Override
     public List<RestServiceItem> getRestServiceItemList(Project project, GlobalSearchScope globalSearchScope) {
         List<RestServiceItem> itemList = new ArrayList<>();

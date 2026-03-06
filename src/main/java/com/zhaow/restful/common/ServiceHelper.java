@@ -48,7 +48,7 @@ public class ServiceHelper {
 
         SpringResolver springResolver = new SpringResolver(module);
         JaxrsResolver jaxrsResolver = new JaxrsResolver(module);
-        FeignResolver feignResolver = new FeignResolver(module.getProject());
+        FeignResolver feignResolver = new FeignResolver(module);
         ServiceResolver[] resolvers = {springResolver,jaxrsResolver,feignResolver};
 
         for (ServiceResolver resolver : resolvers) {

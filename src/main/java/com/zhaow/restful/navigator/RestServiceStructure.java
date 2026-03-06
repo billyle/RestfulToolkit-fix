@@ -162,6 +162,9 @@ public class RestServiceStructure extends SimpleTreeStructure {
     }
 
     private void resetRestServiceDetail() {
+        if (myRestServiceDetail == null) {
+            return;
+        }
         myRestServiceDetail.resetRequestTabbedPane();
         myRestServiceDetail.setMethodValue(HttpMethod.GET.name());
         myRestServiceDetail.setUrlValue("URL");
@@ -362,6 +365,9 @@ public class RestServiceStructure extends SimpleTreeStructure {
          * 显示服务详情，url
          */
         private void showServiceDetail(RestServiceItem serviceItem) {
+            if (myRestServiceDetail == null) {
+                return;
+            }
 
             myRestServiceDetail.resetRequestTabbedPane();
 
