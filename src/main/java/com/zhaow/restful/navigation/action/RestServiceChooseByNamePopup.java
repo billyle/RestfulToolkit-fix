@@ -62,7 +62,7 @@ public class RestServiceChooseByNamePopup extends ChooseByNamePopup {
 
 //TODO: resolve PathVariable
   public static String getTransformedPattern(String pattern, ChooseByNameModel model) {
-    if (! (model instanceof GotoRequestMappingModel) ) {
+    if (! (model instanceof GotoRequestMappingModel) && !(model instanceof GotoRequestMappingServiceTypeModel)) {
       return pattern;
     }
 

@@ -23,7 +23,7 @@ public class ToolkitIcons {
             }else if(method.equals(HttpMethod.DELETE)) {
                 return METHOD.DELETE;
             }
-            return FEIGN; // 默认返回Feign图标用于Feign Client
+            return UNDEFINED; // 默认返回未定义图标
         }
 
         public static  Icon GET = IconLoader.getIcon("/icons/method/g.png",ToolkitIcons.class); // 16x16 GREEN

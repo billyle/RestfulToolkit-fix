@@ -151,6 +151,11 @@ public class RestServiceItem implements NavigationItem {
         @Override
         public Icon getIcon(boolean unused) {
 //            System.out.println(unused + "  " + this.getPresentableText());
+            // 如果是 Feign 服务，直接返回 Feign 图标
+            if (downstreamService != null && !downstreamService.isEmpty()) {
+                return ToolkitIcons.METHOD.FEIGN;
+            }
+            // 否则根据 HTTP 方法返回对应的图标
             return ToolkitIcons.METHOD.get(method);
         }
     }
