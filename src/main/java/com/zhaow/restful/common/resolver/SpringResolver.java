@@ -214,10 +214,9 @@ public class SpringResolver  extends BaseServiceResolver  {
 
             for (RequestPath classRequestPath : classRequestPaths) {
                 for (RequestPath methodRequestPath : methodRequestPaths) {
-                    String path =  classRequestPath.getPath();
-//                String path = tryReplacePlaceholderValueInPath( classRequestPath.getPath() );
+                    String fullPath = concatenatePaths(classRequestPath.getPath(), methodRequestPath.getPath());
 
-                    RestServiceItem item = createRestServiceItem(psiMethod, path, methodRequestPath);
+                    RestServiceItem item = createRestServiceItem(psiMethod, fullPath, methodRequestPath);
                     itemList.add(item);
                 }
             }
@@ -487,5 +486,22 @@ public class SpringResolver  extends BaseServiceResolver  {
         }
     }
 
-
+    private String concatenatePaths(String basePath, String methodPath) {
+        if (basePath == null) basePath = "";
+        if (methodPath == null) methodPath = "";
+        
+        if (basePath.equals("/") && methodPath.startsWith("/")) {
+            return methodPath;
+        }
+        
+        if (basePath.endsWith("/") && methodPath.startsWith("/")) {
+            return basePath + methodPath.substring(1);
+        }
+        
+        if (!basePath.endsWith("/") && !methodPath.startsWith("/")) {
+            return basePath + "/" + methodPath;
+        }
+        
+        return basePath + methodPath;
+    }
 }

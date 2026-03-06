@@ -23,7 +23,7 @@ public class ToolkitIcons {
             }else if(method.equals(HttpMethod.DELETE)) {
                 return METHOD.DELETE;
             }
-            return null;
+            return FEIGN; // 默认返回Feign图标用于Feign Client
         }
 
         public static  Icon GET = IconLoader.getIcon("/icons/method/g.png",ToolkitIcons.class); // 16x16 GREEN
@@ -33,6 +33,7 @@ public class ToolkitIcons {
         public static  Icon PATCH = IconLoader.getIcon("/icons/method/p3.png",ToolkitIcons.class); // 16x16 GRAY
         public static  Icon DELETE = IconLoader.getIcon("/icons/method/d.png",ToolkitIcons.class); // 16x16 RED
         public static  Icon UNDEFINED = IconLoader.getIcon("/icons/method/undefined.png",ToolkitIcons.class); // 16x16 GRAY
+        public static  Icon FEIGN = IconLoader.getIcon("/icons/method/f.png",ToolkitIcons.class); // 16x16 Feign
         // OPTIONS HEAD
     }
 

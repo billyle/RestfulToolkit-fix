@@ -71,16 +71,8 @@ public abstract class BaseServiceResolver implements ServiceResolver{
     }
 
     @NotNull
-    protected RestServiceItem createRestServiceItem(PsiElement psiMethod, String classUriPath, RequestPath requestMapping) {
-        if (!classUriPath.startsWith("/")) classUriPath = "/".concat(classUriPath);
-        if (!classUriPath.endsWith("/")) classUriPath = classUriPath.concat("/");
-
-        String methodPath = requestMapping.getPath();
-
-        if (methodPath.startsWith("/")) methodPath = methodPath.substring(1, methodPath.length());
-        String requestPath = classUriPath + methodPath;
-
-        RestServiceItem item = new RestServiceItem(psiMethod, requestMapping.getMethod(), requestPath);
+    protected RestServiceItem createRestServiceItem(PsiElement psiMethod, String fullPath, RequestPath requestMapping) {
+        RestServiceItem item = new RestServiceItem(psiMethod, requestMapping.getMethod(), fullPath);
         if (myModule != null) {
             item.setModule(myModule);
         }

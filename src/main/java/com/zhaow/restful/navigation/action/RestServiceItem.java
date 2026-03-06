@@ -26,6 +26,7 @@ public class RestServiceItem implements NavigationItem {
     private HttpMethod method;  //请求方法 get/post...
 
     private String url; //url mapping;
+    private String downstreamService; // 下游服务名称（用于Feign Client）
 /*
     private String methodName; //方法名称
 
@@ -125,13 +126,21 @@ public class RestServiceItem implements NavigationItem {
                 }
                 return null;
             });
-
             // 添加模块名称到位置信息中
             if (module != null) {
                 if (location != null) {
                     location = module.getName() + " | " + location;
                 } else {
                     location = module.getName();
+                }
+            }
+            
+            // 添加下游服务名称（用于Feign Client）
+            if (downstreamService != null && !downstreamService.isEmpty()) {
+                if (location != null) {
+                    location = location + " -> " + downstreamService;
+                } else {
+                    location = downstreamService;
                 }
             }
 
@@ -210,5 +219,13 @@ public class RestServiceItem implements NavigationItem {
 
     public PsiElement getPsiElement() {
         return psiElement;
+    }
+
+    public void setDownstreamService(String downstreamService) {
+        this.downstreamService = downstreamService;
+    }
+
+    public String getDownstreamService() {
+        return downstreamService;
     }
 }

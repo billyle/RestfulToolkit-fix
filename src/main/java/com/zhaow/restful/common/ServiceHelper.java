@@ -5,6 +5,7 @@ import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiMethod;
+import com.zhaow.restful.common.resolver.FeignResolver;
 import com.zhaow.restful.common.resolver.JaxrsResolver;
 import com.zhaow.restful.common.resolver.ServiceResolver;
 import com.zhaow.restful.common.resolver.SpringResolver;
@@ -47,7 +48,8 @@ public class ServiceHelper {
 
         SpringResolver springResolver = new SpringResolver(module);
         JaxrsResolver jaxrsResolver = new JaxrsResolver(module);
-        ServiceResolver[] resolvers = {springResolver,jaxrsResolver};
+        FeignResolver feignResolver = new FeignResolver(module.getProject());
+        ServiceResolver[] resolvers = {springResolver,jaxrsResolver,feignResolver};
 
         for (ServiceResolver resolver : resolvers) {
             List<RestServiceItem> allSupportedServiceItemsInModule = resolver.findAllSupportedServiceItemsInModule();
@@ -64,8 +66,8 @@ public class ServiceHelper {
 
         SpringResolver springResolver = new SpringResolver(project);
         JaxrsResolver jaxrsResolver = new JaxrsResolver(project);
-
-        ServiceResolver[] resolvers = {springResolver,jaxrsResolver};
+        FeignResolver feignResolver = new FeignResolver(project);
+        ServiceResolver[] resolvers = {springResolver,jaxrsResolver,feignResolver};
         for (ServiceResolver resolver : resolvers) {
             List<RestServiceItem> allSupportedServiceItemsInProject = resolver.findAllSupportedServiceItemsInProject();
 
