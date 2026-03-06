@@ -8,7 +8,6 @@ import com.zhaow.restful.annotations.JaxrsHttpMethodAnnotation;
 import com.zhaow.restful.annotations.JaxrsPathAnnotation;
 import com.zhaow.restful.common.PsiAnnotationHelper;
 import com.zhaow.restful.method.RequestPath;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -86,10 +85,16 @@ public class JaxrsAnnotationHelper {
             mappingPath = getWsPathValue(annotation);
         }else {
             String methodName = psiMethod.getName();
-            mappingPath = StringUtils.uncapitalize(methodName);
+            mappingPath = uncapitalize(methodName);
         }
 
         return mappingPath;
     }
 
+    private static String uncapitalize(String str) {
+        if (str == null || str.length() == 0) {
+            return str;
+        }
+        return Character.toLowerCase(str.charAt(0)) + str.substring(1);
+    }
 }

@@ -479,7 +479,7 @@ public class SpringResolver  extends BaseServiceResolver  {
                 Field keyField = kotlinAnnotationsIndexClass.getDeclaredField("KEY");
                 keyField.setAccessible(true);
                 StubIndexKey<String, KtAnnotationEntry> key = (StubIndexKey<String, KtAnnotationEntry>) keyField.get(null);
-                return StubIndex.getInstance().get(key, annotationName, project, scope);
+                return StubIndex.getElements(key, annotationName, project, scope, KtAnnotationEntry.class);
             } catch (Exception ex) {
                 // If all else fails, return empty collection
                 return Collections.emptyList();

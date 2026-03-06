@@ -2,7 +2,6 @@ package com.zhaow.restful.method.action;
 
 
 import com.intellij.openapi.module.Module;
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 //PathAndQuery  AbsolutePath AbsoluteUri Query
@@ -39,10 +38,13 @@ public class ModuleHelper {
         }
 
         String port = propertiesHandler.getServerPort();
-        if (StringUtils.isEmpty(port)) port = PORT;
+        if (isEmpty(port)) port = PORT;
 
         String contextPath = propertiesHandler.getContextPath();
         return new StringBuilder(SCHEME).append(HOST).append(":").append(port).append(contextPath).toString();
     }
 
+    private static boolean isEmpty(String str) {
+        return str == null || str.isEmpty();
+    }
 }

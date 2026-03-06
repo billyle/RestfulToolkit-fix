@@ -2,8 +2,10 @@
 
 去除了原插件报错不兼容idea2021的功能，只保留了搜索路径等基础功能
 
-
-原插件地址[https://github.com/mrmanzhaow/RestfulToolkit](https://github.com/mrmanzhaow/RestfulToolkit)
+原始插件地址: https://github.com/mrmanzhaow/RestfulToolkit.git
+升级fork1: https://github.com/code142857/RestfulToolkit-fix.git
+升级fork2: https://gitee.com/youthdream/restful-toolkit-fix.git
+升级fork3【当前】: https://github.com/billyle/RestfulToolkit-fix.git
 
 # RestfulToolkit
 ## A toolkit for restful services development.
@@ -33,4 +35,8 @@
  #### 支持 JAX-RS 
  #### 支持 Kotlin 语言语法
  ------------
+ 
+ ### 版本历史
+ - **2.1.15**: 完善模块名称显示功能，优化多项目环境下URL查找的准确性，修复相关组件在复杂项目结构下的兼容性问题
+ - **2.1.14**: 升级Java版本至17，修复IDE 2025.3版本兼容性问题，在URL查找结果中显示所属模块名称
  

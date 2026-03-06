@@ -5,7 +5,6 @@ import com.intellij.openapi.module.Module;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.Yaml;
 
@@ -239,7 +238,7 @@ public class PropertiesHandler {
             while(iterator.hasNext()) {
                 Map.Entry<String, Object> entry = (Map.Entry)iterator.next();
                 String key = entry.getKey();
-                if (StringUtils.isNotBlank(path)) {
+                if (isNotBlank(path)) {
                     if (key.startsWith("[")) {
                         key = path + key;
                     } else {
@@ -271,4 +270,7 @@ public class PropertiesHandler {
         }
     }
 
+    private static boolean isNotBlank(String str) {
+        return str != null && !str.trim().isEmpty();
+    }
 }

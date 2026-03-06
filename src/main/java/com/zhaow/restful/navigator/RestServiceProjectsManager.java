@@ -28,8 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 @State(name = "RestServiceProjectsManager")
-public class RestServiceProjectsManager extends AbstractProjectComponent
-  implements PersistentStateComponent<RestServicesNavigatorState>, Disposable, ProjectComponent {
+public class RestServiceProjectsManager implements PersistentStateComponent<RestServicesNavigatorState>, Disposable, ProjectComponent {
   protected final Project myProject;
 
 
@@ -41,7 +40,6 @@ public class RestServiceProjectsManager extends AbstractProjectComponent
   }
 
   public RestServiceProjectsManager(Project project) {
-      super(project);
       myProject = project;
 //    System.out.println("RestServiceProjectsManager");
   }

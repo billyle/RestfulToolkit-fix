@@ -11,7 +11,6 @@ import com.zhaow.restful.annotations.SpringRequestMethodAnnotation;
 import com.zhaow.restful.common.PsiAnnotationHelper;
 import com.zhaow.restful.common.RestSupportedAnnotationHelper;
 import com.zhaow.restful.method.RequestPath;
-import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -164,7 +163,7 @@ public class RequestMappingAnnotationHelper implements RestSupportedAnnotationHe
 //        String value = psiAnnotationMemberValue.getText().replace("\"","");
 //        if(psiAnnotationMemberValue.)
 
-        if (StringUtils.isEmpty(value))
+        if (isEmpty(value))
             value = PsiAnnotationHelper.getAnnotationAttributeValue(annotation,"path");
         return value;
     }
@@ -231,12 +230,20 @@ public class RequestMappingAnnotationHelper implements RestSupportedAnnotationHe
             mappingPath = RequestMappingAnnotationHelper.getRequestMappingValue(annotation);
         }else {
             String methodName = psiMethod.getName();
-            mappingPath = StringUtils.uncapitalize(methodName);
+            mappingPath = uncapitalize(methodName);
         }
 
         return mappingPath;
     }
 
+    private static boolean isEmpty(String str) {
+        return str == null || str.isEmpty();
+    }
 
-
+    private static String uncapitalize(String str) {
+        if (str == null || str.length() == 0) {
+            return str;
+        }
+        return Character.toLowerCase(str.charAt(0)) + str.substring(1);
+    }
 }

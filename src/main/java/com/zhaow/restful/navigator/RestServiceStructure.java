@@ -11,7 +11,6 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.ui.treeStructure.CachingSimpleNode;
 import com.intellij.ui.treeStructure.SimpleNode;
 import com.intellij.ui.treeStructure.SimpleTree;
-import com.intellij.ui.treeStructure.SimpleTreeBuilder;
 import com.intellij.ui.treeStructure.SimpleTreeStructure;
 import com.intellij.util.OpenSourceUtil;
 import com.zhaow.restful.common.KtFunctionHelper;
@@ -20,7 +19,6 @@ import com.zhaow.restful.common.ToolkitIcons;
 import com.zhaow.restful.method.HttpMethod;
 import com.zhaow.restful.navigation.action.RestServiceItem;
 import gnu.trove.THashMap;
-import org.apache.commons.lang.StringUtils;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,7 +39,6 @@ public class RestServiceStructure extends SimpleTreeStructure {
     private final RestServiceProjectsManager myProjectsManager;
     private final Map<RestServiceProject, ProjectNode> myProjectToNodeMapping = new THashMap<>();
     RestServiceDetail myRestServiceDetail;
-    private SimpleTreeBuilder myTreeBuilder;
     private SimpleTree myTree;
     private RootNode myRoot = new RootNode();
     private int serviceCount = 0;
@@ -56,11 +53,7 @@ public class RestServiceStructure extends SimpleTreeStructure {
 
         configureTree(tree);
 
-        myTreeBuilder = new SimpleTreeBuilder(tree, (DefaultTreeModel) tree.getModel(), this, null);
-        Disposer.register(myProject, myTreeBuilder);
-
-        myTreeBuilder.initRoot();
-        myTreeBuilder.expand(myRoot, null);
+        myTree = tree;
 
     }
 
@@ -129,9 +122,6 @@ public class RestServiceStructure extends SimpleTreeStructure {
 
     public void updateProjects(List<RestServiceProject> projects) {
         serviceCount = 0;
-//        DefaultMutableTreeNode rootTreeNode = createTreeNode("REST Services");
-//        myTreeBuilder.addSubtreeToUpdate(rootTreeNode);
-
         for (RestServiceProject each : projects) {
             serviceCount += each.serviceItems.size();
             ProjectNode node = findNodeFor(each);
@@ -140,10 +130,9 @@ public class RestServiceStructure extends SimpleTreeStructure {
                 myProjectToNodeMapping.put(each, node);
             }
         }
-        myTreeBuilder.getUi().doUpdateFromRoot();
-//        ((CachingSimpleNode) myRoot.getParent()).cleanUpCache();
-//        myRoot.childrenChanged();
         myRoot.updateProjectNodes(projects);
+        myTree.revalidate();
+        myTree.repaint();
     }
 
     private ProjectNode findNodeFor(RestServiceProject project) {
@@ -154,7 +143,7 @@ public class RestServiceStructure extends SimpleTreeStructure {
         if (node == null) {
             return;
         }
-        myTreeBuilder.addSubtreeToUpdateByElement(node);
+        // myTreeBuilder.addSubtreeToUpdateByElement(node);
     }
 
     private void updateUpTo(SimpleNode node) {
@@ -256,7 +245,7 @@ public class RestServiceStructure extends SimpleTreeStructure {
             if (parent != null) {
                 ((BaseSimpleNode)parent).cleanUpCache();
             }*/
-            updateFrom(getParent());
+            // updateFrom(getParent());
             childrenChanged();
 //            updateUpTo(this);
 
@@ -293,7 +282,7 @@ public class RestServiceStructure extends SimpleTreeStructure {
             if (parent != null) {
                 ((BaseSimpleNode) parent).cleanUpCache();
             }
-            updateFrom(parent);
+            // updateFrom(parent);
 //            childrenChanged();
 //            updateUpTo(this);
         }
@@ -401,7 +390,7 @@ public class RestServiceStructure extends SimpleTreeStructure {
             myRestServiceDetail.addRequestParamsTab(requestParams);
 
 
-            if (StringUtils.isNotBlank(requestBodyJson)) {
+            if (isNotBlank(requestBodyJson)) {
                 myRestServiceDetail.addRequestBodyTabPanel(requestBodyJson);
             }
         }
@@ -450,4 +439,7 @@ public class RestServiceStructure extends SimpleTreeStructure {
 
     }
 
+    private static boolean isNotBlank(String str) {
+        return str != null && !str.trim().isEmpty();
+    }
 }

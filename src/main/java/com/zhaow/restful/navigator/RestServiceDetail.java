@@ -16,11 +16,11 @@ import com.intellij.openapi.util.SystemInfoRt;
 import com.intellij.ui.components.JBPanel;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.ui.JBColor;
 import com.intellij.util.ui.UIUtil;
 import com.zhaow.restful.common.RequestHelper;
 import com.zhaow.utils.JsonUtils;
 import com.zhaow.utils.ToolkitUtil;
-import org.apache.commons.lang.StringUtils;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -141,7 +141,7 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
                         String responseText = url;
 
                         String response = null;
-                        if (requestBodyTextArea != null && StringUtils.isNotBlank(requestBodyTextArea.getText())) {
+                        if (requestBodyTextArea != null && isNotBlank(requestBodyTextArea.getText())) {
                             response = RequestHelper.postRequestBodyWithJson(url, requestBodyTextArea.getText());
                         } else {
                             response = RequestHelper.request(url, method);
@@ -202,7 +202,7 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
     public void addRequestParamsTab(String requestParams) {
         StringBuilder paramBuilder = new StringBuilder();
 
-        if (StringUtils.isNotBlank(requestParams)) {
+        if (isNotBlank(requestParams)) {
             String[] paramArray = requestParams.split("&");
             for (String paramPairStr : paramArray) {
                 String[] paramPair = paramPairStr.split("=");
@@ -238,7 +238,7 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
             return;
         }
 
-        if (UIUtil.isUnderDarcula()) {
+        if (!JBColor.isBright()) {
             jTextArea.setBackground(new Color(0x2B2B2B));
             jTextArea.setForeground(new Color(0xBBBBBB));
 
@@ -366,7 +366,7 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
     }
 
     private void resetTextComponent(JTextArea textComponent) {
-        if (textComponent != null && StringUtils.isNotBlank(textComponent.getText())) {
+        if (textComponent != null && isNotBlank(textComponent.getText())) {
             textComponent.setText("");
         }
     }
@@ -410,5 +410,7 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
         }
     }
 
-
+    private static boolean isNotBlank(String str) {
+        return str != null && !str.trim().isEmpty();
+    }
 }

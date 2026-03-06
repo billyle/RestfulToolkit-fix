@@ -2,6 +2,7 @@ package com.zhaow.restful.navigation.action;
 
 import com.intellij.navigation.ItemPresentation;
 import com.intellij.navigation.NavigationItem;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.module.Module;
 import com.intellij.pom.Navigatable;
 import com.intellij.psi.PsiElement;
@@ -106,21 +107,35 @@ public class RestServiceItem implements NavigationItem {
 
             String location = null;
 
-            if (psiElement instanceof PsiMethod) {
-                PsiMethod psiMethod = ((PsiMethod) psiElement);;
-                location = psiMethod.getContainingClass().getName().concat("#").concat(psiMethod.getName());
-            } else if (psiElement instanceof KtNamedFunction) {
-                KtNamedFunction ktNamedFunction = (KtNamedFunction) RestServiceItem.this.psiElement;
-                String className = ((KtClass) psiElement.getParent().getParent()).getName();
-                location = className.concat("#").concat(ktNamedFunction.getName());
-            }
+            // 在read-action中安全地访问Psi元素
+            location = ApplicationManager.getApplication().<String>runReadAction(() -> {
+                if (psiElement instanceof PsiMethod) {
+                    PsiMethod psiMethod = ((PsiMethod) psiElement);
+                    if (psiMethod.getContainingClass() != null) {
+                        return psiMethod.getContainingClass().getName().concat("#").concat(psiMethod.getName());
+                    }
+                } else if (psiElement instanceof KtNamedFunction) {
+                    KtNamedFunction ktNamedFunction = (KtNamedFunction) RestServiceItem.this.psiElement;
+                    if (ktNamedFunction.getParent() != null && ktNamedFunction.getParent().getParent() instanceof KtClass) {
+                        String className = ((KtClass) ktNamedFunction.getParent().getParent()).getName();
+                        if (className != null) {
+                            return className.concat("#").concat(ktNamedFunction.getName());
+                        }
+                    }
+                }
+                return null;
+            });
 
             // 添加模块名称到位置信息中
             if (module != null) {
-                location = module.getName() + " | " + location;
+                if (location != null) {
+                    location = module.getName() + " | " + location;
+                } else {
+                    location = module.getName();
+                }
             }
 
-            return "(" + location + ")";
+            return location != null ? "(" + location + ")" : "";
         }
 
         @Nullable

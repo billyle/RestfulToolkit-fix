@@ -25,8 +25,7 @@ import java.awt.*;
 import java.net.URL;
 
 @State(name = "RestServicesNavigator", storages = { @Storage(StoragePathMacros.WORKSPACE_FILE) })
-public class RestServicesNavigator extends AbstractProjectComponent
-		implements PersistentStateComponent<RestServicesNavigatorState>, ProjectComponent {
+public class RestServicesNavigator implements PersistentStateComponent<RestServicesNavigatorState>, ProjectComponent {
 
 	public static final Logger LOG = Logger.getInstance(RestServicesNavigator.class);
 
@@ -48,7 +47,6 @@ public class RestServicesNavigator extends AbstractProjectComponent
 	private RestServiceProjectsManager myProjectsManager;
 
 	public RestServicesNavigator(Project myProject) {
-		super(myProject);
 		this.myProject = myProject;
 		myProjectsManager = RestServiceProjectsManager.getInstance(myProject);
 	}
