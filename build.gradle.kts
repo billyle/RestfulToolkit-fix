@@ -61,7 +61,7 @@ tasks.named("buildSearchableOptions") {
 }
 
 group = "me.jinghong.restful.toolkit"
-version = "2.1.18"
+version = "2.1.19"
 
 repositories {
     mavenLocal()
