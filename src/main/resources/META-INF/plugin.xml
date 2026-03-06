@@ -1,7 +1,7 @@
 <idea-plugin url="https://plugins.jetbrains.com/plugin/16788-restfultoolkit-fix" allow-bundled-update="true">
     <id>me.jinghong.restful.toolkit</id>
     <name>RestfulToolkit-fix</name>
-    <version>2.1.15</version>
+    <version>2.1.16</version>
     <vendor email="153335058@qq.com" url="https://gitee.com/youthdream">jinghong</vendor>
 
     <description><![CDATA[
@@ -33,6 +33,7 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <li>2.1.16 修复线程安全问题：解决"Save settings failed"错误，getState()方法现在正确处理非EDT线程调用</li>
         <li>2.1.15 完善模块名称显示功能，优化多项目环境下URL查找的准确性<br/>修复相关组件在复杂项目结构下的兼容性问题</li>
         <li>2.1.14 升级Java版本至17，修复IDE 2025.3版本兼容性问题<br/>在URL查找结果中显示所属模块名称，方便区分多项目中的相同URL</li>
         <li>2.0.9 在URL查找结果中显示所属模块名称，方便区分多项目中的相同URL<br/>扩展IDE兼容性至2025.3版本</li>

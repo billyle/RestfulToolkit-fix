@@ -211,14 +211,17 @@ public class RestServicesNavigator implements PersistentStateComponent<RestServi
 	@Nullable
 	@Override
 	public RestServicesNavigatorState getState() {
-		ApplicationManager.getApplication().assertIsDispatchThread();
-		if (myStructure != null) {
-			try {
-				myState.treeState = new Element("root");
-				TreeState.createOn(myTree).writeExternal(myState.treeState);
-			}
-			catch (WriteExternalException e) {
-				LOG.warn(e);
+		// 修复线程安全问题：getState() 可能在非EDT线程中被调用
+		// 只有在EDT线程中才尝试从UI组件读取状态，否则返回已保存的状态
+		if (ApplicationManager.getApplication().isDispatchThread()) {
+			if (myStructure != null && myTree != null) {
+				try {
+					myState.treeState = new Element("root");
+					TreeState.createOn(myTree).writeExternal(myState.treeState);
+				}
+				catch (WriteExternalException e) {
+					LOG.warn(e);
+				}
 			}
 		}
 		return myState;
