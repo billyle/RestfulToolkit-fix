@@ -82,4 +82,17 @@ public class RestServiceProject {
     public String toString() {
         return appName + ":" + port;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        RestServiceProject that = (RestServiceProject) o;
+        return moduleName != null ? moduleName.equals(that.moduleName) : that.moduleName == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return moduleName != null ? moduleName.hashCode() : 0;
+    }
 }

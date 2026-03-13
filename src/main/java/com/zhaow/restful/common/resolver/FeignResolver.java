@@ -11,6 +11,7 @@ import com.zhaow.restful.annotations.SpringRequestMethodAnnotation;
 import com.zhaow.restful.common.PsiAnnotationHelper;
 import com.zhaow.restful.method.RequestPath;
 import com.zhaow.restful.navigation.action.RestServiceItem;
+import com.zhaow.utils.PluginLogger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -28,11 +29,19 @@ public class FeignResolver extends BaseServiceResolver {
     
     @Override
     public List<RestServiceItem> getRestServiceItemList(Project project, GlobalSearchScope globalSearchScope) {
+        PluginLogger logger = new PluginLogger(FeignResolver.class, project);
+        logger.info("[FeignResolver] getRestServiceItemList called");
+        logger.info("[FeignResolver] Project: " + project.getName());
+        logger.info("[FeignResolver] Search scope: " + globalSearchScope.toString());
+        
         List<RestServiceItem> itemList = new ArrayList<>();
         
         // 查找所有标注了 @FeignClient 的接口
+        logger.info("[FeignResolver] Searching for @FeignClient annotations with name: " + FeignClientAnnotation.FEIGN_CLIENT.getShortName());
         Collection<PsiAnnotation> feignClientAnnotations = JavaAnnotationIndex.getInstance()
                 .get(FeignClientAnnotation.FEIGN_CLIENT.getShortName(), project, globalSearchScope);
+        
+        logger.info("[FeignResolver] Found " + feignClientAnnotations.size() + " @FeignClient annotations");
         
         for (PsiAnnotation feignClientAnnotation : feignClientAnnotations) {
             PsiModifierList psiModifierList = (PsiModifierList) feignClientAnnotation.getParent();
@@ -44,6 +53,9 @@ public class FeignResolver extends BaseServiceResolver {
             
             PsiClass feignInterface = (PsiClass) psiElement;
             Module module = ModuleUtilCore.findModuleForPsiElement(feignInterface);
+            String moduleName = module != null ? module.getName() : "null";
+            
+            logger.info("[FeignResolver] Processing FeignClient: " + feignInterface.getName() + " in module: " + moduleName);
             
             // 获取 FeignClient 的 path 和 name/value 属性
             String feignPath = getAnnotationAttributeValue(feignClientAnnotation, "path");
@@ -59,11 +71,16 @@ public class FeignResolver extends BaseServiceResolver {
                 downstreamServiceName = getAnnotationAttributeValue(feignClientAnnotation, "value");
             }
             
+            logger.info("[FeignResolver] FeignClient path: " + feignPath + ", serviceName: " + downstreamServiceName);
+            
             // 处理接口中的方法
             PsiMethod[] methods = feignInterface.getMethods();
+            logger.info("[FeignResolver] FeignClient has " + methods.length + " methods");
+            
             for (PsiMethod method : methods) {
                 // 获取方法上的 Spring RequestMapping 注解
                 RequestPath[] methodRequestPaths = getMethodRequestPaths(method);
+                logger.info("[FeignResolver] Method " + method.getName() + " has " + methodRequestPaths.length + " request paths");
                 
                 for (RequestPath methodRequestPath : methodRequestPaths) {
                     String fullPath = concatenatePaths(feignPath, methodRequestPath.getPath());
@@ -79,10 +96,12 @@ public class FeignResolver extends BaseServiceResolver {
                     }
                     
                     itemList.add(item);
+                    logger.info("[FeignResolver] Added service item: " + method.getName() + " -> " + fullPath);
                 }
             }
         }
         
+        logger.info("[FeignResolver] getRestServiceItemList returned " + itemList.size() + " items");
         return itemList;
     }
     

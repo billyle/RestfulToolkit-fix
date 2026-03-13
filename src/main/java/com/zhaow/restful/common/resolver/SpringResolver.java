@@ -179,8 +179,9 @@ public class SpringResolver  extends BaseServiceResolver  {
 
                     for (RequestPath classRequestPath : classRequestPaths) {
                         for (RequestPath requestPath : requestPaths) {
-                            requestPath.concat(classRequestPath);
-                            RestServiceItem item = createRestServiceItem(fun, "", requestPath);
+                            RequestPath combinedPath = new RequestPath(requestPath.getPath(), requestPath.getMethod());
+                            combinedPath.concat(classRequestPath);
+                            RestServiceItem item = createRestServiceItem(fun, "", combinedPath);
                             if (module != null) {
                                 item.setModule(module);
                             }
@@ -188,10 +189,6 @@ public class SpringResolver  extends BaseServiceResolver  {
                         }
                     }
                 }
-/*
-                PsiClass psiClass = LightClassUtilsKt.toLightClass(ktClass);
-                itemList.addAll(getServiceItemList(psiClass));*/
-
             }
 
         }

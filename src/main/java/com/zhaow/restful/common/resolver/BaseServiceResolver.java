@@ -23,19 +23,10 @@ public abstract class BaseServiceResolver implements ServiceResolver{
             return itemList;
         }
 
-        GlobalSearchScope globalSearchScope = GlobalSearchScope.moduleScope(myModule);
-/*
+        // 使用模块范围 + 依赖库范围，确保能扫描到所有相关类
+        GlobalSearchScope moduleWithDependencies = GlobalSearchScope.moduleWithDependenciesAndLibrariesScope(myModule);
 
-        List<PsiMethod> psiMethodList = this.getServicePsiMethodList(myModule.getProject(), globalSearchScope);
-
-        //  尴尬了，PsiMethod 不能直接获取到 Module，暂时通过传参的方式
-        psiMethodList.forEach(psiMethod -> {
-            List<RestServiceItem> serviceItemList = getServiceItemList(psiMethod);
-            itemList.addAll(serviceItemList);
-        });
-*/
-
-        itemList = getRestServiceItemList(myModule.getProject(), globalSearchScope);
+        itemList = getRestServiceItemList(myModule.getProject(), moduleWithDependencies);
         return itemList;
     }
 

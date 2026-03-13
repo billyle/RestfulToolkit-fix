@@ -14,11 +14,13 @@ import com.intellij.ui.ScrollPaneFactory;
 import com.intellij.ui.treeStructure.SimpleTree;
 import com.zhaow.restful.navigation.action.RestServiceItem;
 import com.zhaow.utils.RestServiceDataKeys;
+import com.zhaow.utils.PluginLogger;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -29,6 +31,7 @@ public class RestServicesNavigatorPanel extends SimpleToolWindowPanel implements
     private final Project myProject;
     private final SimpleTree myTree;
     RestServiceDetail myRestServiceDetail;
+    private static final PluginLogger LOG = new PluginLogger(RestServicesNavigatorPanel.class, null);
 
     private JSplitPane servicesContentPaneJSplitPane;
     private Splitter servicesContentPaneSplitter ;
@@ -55,7 +58,10 @@ public class RestServicesNavigatorPanel extends SimpleToolWindowPanel implements
         myTree.setBorder(BorderFactory.createLineBorder(gray));
         JScrollPane scrollPane = ScrollPaneFactory.createScrollPane(myTree);
         scrollPane.setBorder(BorderFactory.createLineBorder(Color.RED));
-
+        
+        // 确保树形控件可见
+        myTree.setVisible(true);
+        scrollPane.setVisible(true);
 
         servicesContentPaneSplitter = new Splitter(true,  .5f);
         servicesContentPaneSplitter.setShowDividerControls(true);
@@ -69,6 +75,10 @@ public class RestServicesNavigatorPanel extends SimpleToolWindowPanel implements
         servicesContentPaneSplitter.setSecondComponent(myRestServiceDetail);
 
         setContent(servicesContentPaneSplitter);
+                
+        // Don't call updateUI() immediately - let the structure update handle it
+        // Calling updateUI() here may clear the tree before data is loaded
+        LOG.info("[RestServicesNavigatorPanel] Panel initialized, tree will be populated by structure update");
 
         /*servicesContentPaneJSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         servicesContentPaneJSplitPane.setDividerLocation(0.5);

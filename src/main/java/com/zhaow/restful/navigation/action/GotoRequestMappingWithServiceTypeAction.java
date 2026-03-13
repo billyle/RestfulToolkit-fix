@@ -9,7 +9,7 @@ import com.intellij.ide.util.gotoByName.ChooseByNamePopup;
 import com.intellij.navigation.ChooseByNameContributor;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.actionSystem.DataKeys;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.DumbAware;
@@ -37,7 +37,7 @@ public class GotoRequestMappingWithServiceTypeAction extends GotoActionBase impl
         FeatureUsageTracker.getInstance().triggerFeatureUsed("navigation.popup.service");
 
         ChooseByNameContributor[] chooseByNameContributors = {
-                new GotoRequestMappingContributor(e.getData(DataKeys.MODULE))
+                new GotoRequestMappingContributor(e.getData(PlatformDataKeys.MODULE))
         };
 
         final GotoRequestMappingServiceTypeModel model = new GotoRequestMappingServiceTypeModel(project, chooseByNameContributors);

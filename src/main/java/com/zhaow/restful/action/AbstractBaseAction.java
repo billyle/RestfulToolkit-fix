@@ -2,7 +2,7 @@ package com.zhaow.restful.action;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.DataKeys;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.module.Module;
@@ -17,7 +17,7 @@ import java.awt.*;
 public abstract class AbstractBaseAction extends AnAction {
 
     protected Module myModule(AnActionEvent e) {
-        return e.getData(DataKeys.MODULE);
+        return e.getData(PlatformDataKeys.MODULE);
     }
 
     protected Project myProject(AnActionEvent e) {

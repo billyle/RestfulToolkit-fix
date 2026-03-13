@@ -9,21 +9,18 @@ import com.intellij.ide.util.gotoByName.ChooseByNamePopup;
 import com.intellij.navigation.ChooseByNameContributor;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
-import com.intellij.openapi.actionSystem.DataKeys;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.PsiElement;
-import com.zhaow.restful.method.HttpMethod;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.datatransfer.DataFlavor;
-import java.util.Arrays;
-import java.util.List;
 
 
 public class GotoRequestMappingAction extends GotoActionBase implements DumbAware {
@@ -39,18 +36,16 @@ public class GotoRequestMappingAction extends GotoActionBase implements DumbAwar
         FeatureUsageTracker.getInstance().triggerFeatureUsed("navigation.popup.service");
 
         ChooseByNameContributor[] chooseByNameContributors = {
-                new GotoRequestMappingContributor(e.getData(DataKeys.MODULE))/*,
+                new GotoRequestMappingContributor(e.getData(PlatformDataKeys.MODULE))/*,
                 new RequestMappingContributor()*/
         };
 
-        final GotoRequestMappingModel model = new GotoRequestMappingModel(project, chooseByNameContributors);
+        final GotoRequestMappingServiceTypeModel model = new GotoRequestMappingServiceTypeModel(project, chooseByNameContributors);
 
-//        GotoRequestMappingCallback callback = new GotoRequestMappingCallback();
-
-        GotoActionCallback<HttpMethod> callback = new GotoActionCallback<HttpMethod>() {
+        GotoActionCallback<ServiceType> callback = new GotoActionCallback<ServiceType>() {
             @Override
-            protected ChooseByNameFilter<HttpMethod> createFilter(@NotNull ChooseByNamePopup popup) {
-                return new GotoRequestMappingFilter(popup, model, project);
+            protected ChooseByNameFilter<ServiceType> createFilter(@NotNull ChooseByNamePopup popup) {
+                return new GotoRequestMappingServiceTypeFilter(popup, model, project);
             }
 
             @Override
@@ -130,35 +125,7 @@ public class GotoRequestMappingAction extends GotoActionBase implements DumbAwar
         }
     }*/
 
-    protected static class GotoRequestMappingFilter extends ChooseByNameFilter<HttpMethod> {
-        GotoRequestMappingFilter(final ChooseByNamePopup popup, GotoRequestMappingModel model, final Project project) {
-            super(popup, model, GotoRequestMappingConfiguration.getInstance(project), project);
-        }
 
-        @Override
-        @NotNull
-        protected List<HttpMethod> getAllFilterValues() {
-//            List<HttpMethod> elements = new ArrayList<>();
-            /*elements.add(HttpMethod.GET);
-            elements.add(HttpMethod.POST);
-            elements.add(HttpMethod.DELETE);
-            elements.add(HttpMethod.PATCH);*/
-            List<HttpMethod> elements = Arrays.asList(HttpMethod.values());
-
-            return elements;
-        }
-
-        @Override
-        protected String textForFilterValue(@NotNull HttpMethod value) {
-            return value.name();
-        }
-
-        @Override
-        protected Icon iconForFilterValue(@NotNull HttpMethod value) {
-//            return value.getIcon();
-            return null;
-        }
-    }
 
 
     //找到文件

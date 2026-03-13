@@ -149,7 +149,6 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
                         if (response != null) {
                             responseText = response;
                         }
-                        System.err.println(responseText);
                         addResponseTabPanel(responseText);
                     };
                     runnable.run();
@@ -166,7 +165,6 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
         requestTabbedPane.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                System.out.println(e.getClickCount());
                 super.mouseClicked(e);
             }
 

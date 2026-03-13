@@ -3,9 +3,11 @@ package com.zhaow.restful.navigator;
 
 import com.intellij.icons.AllIcons;
 import com.intellij.lang.java.JavaLanguage;
-import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Disposer;
+import com.intellij.openapi.wm.ex.ToolWindowEx;
+import com.zhaow.utils.PluginLogger;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiMethod;
 import com.intellij.ui.treeStructure.CachingSimpleNode;
@@ -27,21 +29,30 @@ import org.jetbrains.kotlin.psi.KtNamedFunction;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeNode;
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.InputEvent;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
+import javax.swing.SwingUtilities;
 
 public class RestServiceStructure extends SimpleTreeStructure {
-    public static final Logger LOG = Logger.getInstance(RestServiceStructure.class);
+    private final PluginLogger LOG;
     private final Project myProject;
     private final RestServiceProjectsManager myProjectsManager;
-    private final Map<RestServiceProject, ProjectNode> myProjectToNodeMapping = new THashMap<>();
     RestServiceDetail myRestServiceDetail;
     private SimpleTree myTree;
+    private DefaultTreeModel myTreeModel;
     private RootNode myRoot = new RootNode();
+    private DefaultMutableTreeNode myRootTreeNode;
     private int serviceCount = 0;
+    private boolean pendingRefresh = false;
+
+    // 模块节点列表
+    private List<ModuleNode> moduleNodes = new ArrayList<>();
 
     public RestServiceStructure(Project project,
                                 RestServiceProjectsManager projectsManager,
@@ -50,11 +61,9 @@ public class RestServiceStructure extends SimpleTreeStructure {
         myProjectsManager = projectsManager;
         myTree = tree;
         myRestServiceDetail = project.getComponent(RestServiceDetail.class);
+        this.LOG = new PluginLogger(RestServiceStructure.class, project);
 
         configureTree(tree);
-
-        myTree = tree;
-
     }
 
     public static <T extends BaseSimpleNode> List<T> getSelectedNodes(SimpleTree tree, Class<T> nodeClass) {
@@ -84,6 +93,54 @@ public class RestServiceStructure extends SimpleTreeStructure {
     private void configureTree(SimpleTree tree) {
         tree.setRootVisible(true);
         tree.setShowsRootHandles(true);
+
+        myRootTreeNode = new DefaultMutableTreeNode(myRoot);
+        myTreeModel = new DefaultTreeModel(myRootTreeNode);
+        tree.setModel(myTreeModel);
+
+        // 设置树的选择监听器
+        tree.addTreeSelectionListener(e -> {
+            TreePath path = e.getPath();
+            if (path != null) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                Object userObject = node.getUserObject();
+                if (userObject instanceof BaseSimpleNode) {
+                    // 需要在读操作中执行，避免线程访问错误
+                    ApplicationManager.getApplication().runReadAction(() -> {
+                        ((BaseSimpleNode) userObject).handleSelection(tree);
+                    });
+                }
+            }
+        });
+
+        // 设置右键菜单
+        tree.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    showPopupMenu(e);
+                }
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    showPopupMenu(e);
+                }
+            }
+
+            private void showPopupMenu(java.awt.event.MouseEvent e) {
+                TreePath path = tree.getPathForLocation(e.getX(), e.getY());
+                if (path != null) {
+                    tree.setSelectionPath(path);
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+                    Object userObject = node.getUserObject();
+                    if (userObject instanceof BaseSimpleNode) {
+                        ((BaseSimpleNode) userObject).showPopupMenu(tree, e.getX(), e.getY());
+                    }
+                }
+            }
+        });
     }
 
     @NotNull
@@ -93,72 +150,146 @@ public class RestServiceStructure extends SimpleTreeStructure {
     }
 
     public void update() {
-//        myTreeBuilder.setClearOnHideDelay(4);
-//        myTreeBuilder.cleanUp();
-//        myTreeBuilder.initRoot();
-//        myTreeBuilder.expand(myRoot, null);
-        // rest service controller
-/*
-        SimpleTree tree1 = new SimpleTree();
-        myRoot = new RootNode();
-        myTreeBuilder = new SimpleTreeBuilder(tree1, (DefaultTreeModel)tree1.getModel(), this, null);
-        Disposer.register(myProject, myTreeBuilder);
-
-        myTreeBuilder.initRoot();
-        myTreeBuilder.expand(myRoot, null);*/
-//        List<RestServiceProject> projects = myProjectsManager.getProjects();
-//        List<RestServiceProject> projects = RestServiceProjectsManager.getInstance(myProject).getProjects();
-/*        if (!ModalityState.current().equals(ModalityState.any()) && myProject.isInitialized()) {
-            PsiDocumentManager.getInstance(myProject).commitAllDocuments();
-        }*/
-
         List<RestServiceProject> projects = RestServiceProjectsManager.getInstance(myProject).getServiceProjects();
-
-
-//        Set<RestServiceProject> deleted = new HashSet<>(myProjectToNodeMapping.keySet());
-//        deleted.removeAll(projects);
         updateProjects(projects);
     }
 
     public void updateProjects(List<RestServiceProject> projects) {
         serviceCount = 0;
-        for (RestServiceProject each : projects) {
-            serviceCount += each.serviceItems.size();
-            ProjectNode node = findNodeFor(each);
-            if (node == null) {
-                node = new ProjectNode(myRoot, each);
-                myProjectToNodeMapping.put(each, node);
+        moduleNodes.clear();
+
+        // 按模块分组
+        Map<String, ModuleData> modulesMap = new TreeMap<>();
+
+        if (projects != null) {
+            for (RestServiceProject project : projects) {
+                String moduleName = project.getModuleName();
+                ModuleData moduleData = modulesMap.computeIfAbsent(moduleName, k -> new ModuleData(moduleName));
+
+                if (project.serviceItems != null) {
+                    for (RestServiceItem item : project.serviceItems) {
+                        serviceCount++;
+                        String downstream = item.getDownstreamService();
+                        if (downstream != null && !downstream.isEmpty()) {
+                            // Feign 服务
+                            moduleData.feignCount++;
+                            moduleData.feignServices.computeIfAbsent(downstream, k -> new ArrayList<>()).add(item);
+                        } else {
+                            // Rest 服务
+                            moduleData.restCount++;
+                            moduleData.restServices.add(item);
+                        }
+                    }
+                }
             }
         }
-        myRoot.updateProjectNodes(projects);
+
+        // 创建模块节点
+        for (ModuleData moduleData : modulesMap.values()) {
+            ModuleNode moduleNode = new ModuleNode(myRoot, moduleData);
+            moduleNodes.add(moduleNode);
+        }
+
+        // Refresh the tree UI
+        SwingUtilities.invokeLater(() -> {
+            if (myTree == null) {
+                return;
+            }
+
+            Component parent = myTree.getParent();
+            while (parent != null && !(parent instanceof ToolWindowEx)) {
+                parent = parent.getParent();
+            }
+
+            if (parent instanceof ToolWindowEx) {
+                ToolWindowEx toolWindow = (ToolWindowEx) parent;
+                if (!toolWindow.isVisible()) {
+                    pendingRefresh = true;
+                    return;
+                }
+            }
+
+            performTreeRefresh();
+            pendingRefresh = false;
+        });
+    }
+
+    private void performTreeRefresh() {
+        if (myTree == null || myTreeModel == null) {
+            return;
+        }
+
+        myTree.setRootVisible(true);
+        myTree.setShowsRootHandles(true);
+
+        rebuildTreeNodes();
+
+        // 默认展开一级节点
+        expandFirstLevel();
         myTree.revalidate();
         myTree.repaint();
     }
 
-    private ProjectNode findNodeFor(RestServiceProject project) {
-        return myProjectToNodeMapping.get(project);
+    private void rebuildTreeNodes() {
+        myRootTreeNode.removeAllChildren();
+
+        for (ModuleNode moduleNode : moduleNodes) {
+            DefaultMutableTreeNode moduleTreeNode = new DefaultMutableTreeNode(moduleNode);
+
+            // 添加 REST 类型节点
+            if (moduleNode.restTypeNode != null && !moduleNode.restTypeNode.isEmpty()) {
+                DefaultMutableTreeNode restTypeTreeNode = new DefaultMutableTreeNode(moduleNode.restTypeNode);
+                for (ServiceNode serviceNode : moduleNode.restTypeNode.serviceNodes) {
+                    restTypeTreeNode.add(new DefaultMutableTreeNode(serviceNode));
+                }
+                moduleTreeNode.add(restTypeTreeNode);
+            }
+
+            // 添加 Feign 类型节点
+            if (moduleNode.feignTypeNode != null && !moduleNode.feignTypeNode.isEmpty()) {
+                DefaultMutableTreeNode feignTypeTreeNode = new DefaultMutableTreeNode(moduleNode.feignTypeNode);
+                for (FeignDownstreamNode downstreamNode : moduleNode.feignTypeNode.downstreamNodes) {
+                    DefaultMutableTreeNode downstreamTreeNode = new DefaultMutableTreeNode(downstreamNode);
+                    for (ServiceNode serviceNode : downstreamNode.serviceNodes) {
+                        downstreamTreeNode.add(new DefaultMutableTreeNode(serviceNode));
+                    }
+                    feignTypeTreeNode.add(downstreamTreeNode);
+                }
+                moduleTreeNode.add(feignTypeTreeNode);
+            }
+
+            myRootTreeNode.add(moduleTreeNode);
+        }
+
+        myRootTreeNode.setUserObject(myRoot);
+        myTreeModel.reload();
+    }
+
+    private void expandFirstLevel() {
+        // 展开根节点
+        myTree.expandPath(new TreePath(myRootTreeNode));
+        // 展开一级子节点（模块节点）
+        for (int i = 0; i < myRootTreeNode.getChildCount(); i++) {
+            TreeNode child = myRootTreeNode.getChildAt(i);
+            TreePath path = new TreePath(new Object[]{myRootTreeNode, child});
+            myTree.expandPath(path);
+        }
+    }
+
+    public void onToolWindowBecameVisible() {
+        if (pendingRefresh) {
+            SwingUtilities.invokeLater(() -> {
+                performTreeRefresh();
+                pendingRefresh = false;
+            });
+        }
     }
 
     public void updateFrom(SimpleNode node) {
         if (node == null) {
             return;
         }
-        // myTreeBuilder.addSubtreeToUpdateByElement(node);
-    }
-
-    private void updateUpTo(SimpleNode node) {
-        if (node == null) {
-            return;
-        }
-        SimpleNode each = node;
-        while (each != null) {
-            SimpleNode parent = each.getParent();
-            /*if (parent != null) {
-                ((BaseSimpleNode)parent).cleanUpCache();
-            }*/
-            updateFrom(each);
-            each = each.getParent();
-        }
+        SwingUtilities.invokeLater(this::performTreeRefresh);
     }
 
     private void resetRestServiceDetail() {
@@ -168,177 +299,32 @@ public class RestServiceStructure extends SimpleTreeStructure {
         myRestServiceDetail.resetRequestTabbedPane();
         myRestServiceDetail.setMethodValue(HttpMethod.GET.name());
         myRestServiceDetail.setUrlValue("URL");
-
         myRestServiceDetail.initTab();
     }
 
-    public abstract class BaseSimpleNode extends CachingSimpleNode {
+    // ==================== 数据类 ====================
 
+    private static class ModuleData {
+        String moduleName;
+        int restCount = 0;
+        int feignCount = 0;
+        List<RestServiceItem> restServices = new ArrayList<>();
+        Map<String, List<RestServiceItem>> feignServices = new TreeMap<>();
+
+        ModuleData(String moduleName) {
+            this.moduleName = moduleName;
+        }
+
+        int totalCount() {
+            return restCount + feignCount;
+        }
+    }
+
+    // ==================== 节点类定义 ====================
+
+    public abstract class BaseSimpleNode extends CachingSimpleNode {
         protected BaseSimpleNode(SimpleNode aParent) {
             super(aParent);
-        }
-
-        @Nullable
-        @NonNls
-        String getActionId() {
-            return null;
-        }
-
-        @Nullable
-        @NonNls
-        String getMenuId() {
-            return null;
-        }
-
-        @Override
-        public void cleanUpCache() {
-            super.cleanUpCache();
-        }
-
-        protected void childrenChanged() {
-            BaseSimpleNode each = this;
-            while (each != null) {
-                each.cleanUpCache();
-                each = (BaseSimpleNode) each.getParent();
-            }
-            updateUpTo(this);
-        }
-
-    }
-
-    public class RootNode extends BaseSimpleNode {
-        List<ProjectNode> projectNodes = new ArrayList<>();
-
-        protected RootNode() {
-            super(null);
-            //FIXME 由之前的 AllIcons.Actions.MODULE => AllIcons.Actions.ModuleDirectory
-            getTemplatePresentation().setIcon(AllIcons.Actions.ModuleDirectory);
-            setIcon(AllIcons.Actions.ModuleDirectory); //兼容 IDEA 2016
-        }
-
-        @Override
-        protected SimpleNode[] buildChildren() {
-            return projectNodes.toArray(new SimpleNode[projectNodes.size()]);
-        }
-
-        @Override
-        public String getName() {
-            String s = "Found %d services ";// in {controllerCount} Controllers";
-            return serviceCount > 0 ? String.format(s, serviceCount) : null;
-        }
-
-        @Override
-        public void handleSelection(SimpleTree tree) {
-//            System.out.println("ProjectNode handleSelection");
-            resetRestServiceDetail();
-
-        }
-
-        public void updateProjectNodes(List<RestServiceProject> projects) {
-//            cleanUpCache();
-            projectNodes.clear();
-            for (RestServiceProject project : projects) {
-                ProjectNode projectNode = new ProjectNode(this, project);
-                projectNodes.add(projectNode);
-            }
-
-//                projectNode.updateServiceNodes();
-
-            /*SimpleNode parent = getParent();
-            if (parent != null) {
-                ((BaseSimpleNode)parent).cleanUpCache();
-            }*/
-            // updateFrom(getParent());
-            childrenChanged();
-//            updateUpTo(this);
-
-        }
-
-    }
-
-    public class ProjectNode extends BaseSimpleNode {
-        List<ServiceNode> serviceNodes = new ArrayList<>();
-        RestServiceProject myProject;
-
-
-        public ProjectNode(SimpleNode parent,/*,List<RestServiceItem> serviceItems*/RestServiceProject project) {
-//            super(parent);
-            super(parent);
-            myProject = project;
-
-            getTemplatePresentation().setIcon(ToolkitIcons.MODULE);
-            setIcon(ToolkitIcons.MODULE); //兼容 IDEA 2016
-
-            updateServiceNodes(project.serviceItems);
-        }
-
-        private void updateServiceNodes(List<RestServiceItem> serviceItems) {
-            serviceNodes.clear();
-            for (RestServiceItem serviceItem : serviceItems) {
-                serviceNodes.add(new ServiceNode(this, serviceItem));
-            }
-           /* for (int i = 0; i < 4; i++) {
-                serviceNodes.add(new ServiceNode(this));
-            }*/
-
-            SimpleNode parent = getParent();
-            if (parent != null) {
-                ((BaseSimpleNode) parent).cleanUpCache();
-            }
-            // updateFrom(parent);
-//            childrenChanged();
-//            updateUpTo(this);
-        }
-
-        @Override
-        protected SimpleNode[] buildChildren() {
-            return serviceNodes.toArray(new SimpleNode[serviceNodes.size()]);
-        }
-
-        @Override
-        public String getName() {
-            return myProject.getModuleName();
-        }
-
-
-        @Override
-        @Nullable
-        @NonNls
-        protected String getActionId() {
-            return "Toolkit.RefreshServices";
-        }
-/*
-        @Override
-        @Nullable
-        @NonNls
-        protected String getMenuId() {
-            return "Toolkit.ReimportServices";
-        }*/
-
-        @Override
-        public void handleSelection(SimpleTree tree) {
-//            System.out.println("ProjectNode handleSelection");
-            resetRestServiceDetail();
-        }
-
-        @Override
-        public void handleDoubleClickOrEnter(SimpleTree tree, InputEvent inputEvent) {
-//            System.out.println("ProjectNode handleDoubleClickOrEnter");
-        }
-    }
-
-    public class ServiceNode extends BaseSimpleNode {
-        RestServiceItem myServiceItem;
-
-        public ServiceNode(SimpleNode parent, RestServiceItem serviceItem) {
-            super(parent);
-            myServiceItem = serviceItem;
-
-            Icon icon = ToolkitIcons.METHOD.get(serviceItem.getMethod());
-            if (icon != null) {
-                getTemplatePresentation().setIcon(icon);
-                setIcon(icon); //兼容 IDEA 2016
-            }
         }
 
         @Override
@@ -346,24 +332,334 @@ public class RestServiceStructure extends SimpleTreeStructure {
             return new SimpleNode[0];
         }
 
+        public String getMenuId() {
+            return null;
+        }
+
+        public void handleSelection(SimpleTree tree) {
+            resetRestServiceDetail();
+        }
+
+        public void handleDoubleClickOrEnter(SimpleTree tree, InputEvent inputEvent) {
+        }
+
+        public void showPopupMenu(SimpleTree tree, int x, int y) {
+            JPopupMenu popup = new JPopupMenu();
+
+            // 展开子节点
+            JMenuItem expandItem = new JMenuItem("展开子节点", AllIcons.Actions.Expandall);
+            expandItem.addActionListener(e -> expandChildren(tree));
+            popup.add(expandItem);
+
+            // 收起子节点
+            JMenuItem collapseItem = new JMenuItem("收起子节点", AllIcons.Actions.Collapseall);
+            collapseItem.addActionListener(e -> collapseChildren(tree));
+            popup.add(collapseItem);
+
+            popup.addSeparator();
+
+            // 复制为 Markdown
+            JMenuItem copyItem = new JMenuItem("复制为 Markdown", AllIcons.Actions.Copy);
+            copyItem.addActionListener(e -> copyAsMarkdown());
+            popup.add(copyItem);
+
+            popup.show(tree, x, y);
+        }
+
+        protected void expandChildren(SimpleTree tree) {
+            TreePath path = tree.getSelectionPath();
+            if (path != null) {
+                expandAllChildren(tree, path);
+            }
+        }
+
+        protected void collapseChildren(SimpleTree tree) {
+            TreePath path = tree.getSelectionPath();
+            if (path != null) {
+                collapseAllChildren(tree, path);
+            }
+        }
+
+        private void expandAllChildren(JTree tree, TreePath parent) {
+            TreeNode node = (TreeNode) parent.getLastPathComponent();
+            for (int i = 0; i < node.getChildCount(); i++) {
+                TreeNode child = node.getChildAt(i);
+                TreePath path = parent.pathByAddingChild(child);
+                tree.expandPath(path);
+                expandAllChildren(tree, path);
+            }
+        }
+
+        private void collapseAllChildren(JTree tree, TreePath parent) {
+            TreeNode node = (TreeNode) parent.getLastPathComponent();
+            for (int i = 0; i < node.getChildCount(); i++) {
+                TreeNode child = node.getChildAt(i);
+                TreePath path = parent.pathByAddingChild(child);
+                collapseAllChildren(tree, path);
+                tree.collapsePath(path);
+            }
+        }
+
+        public void copyAsMarkdown() {
+            StringBuilder sb = new StringBuilder();
+            buildMarkdown(sb, 0);
+            CopyPasteManager.getInstance().setContents(new StringSelection(sb.toString()));
+        }
+
+        protected void buildMarkdown(StringBuilder sb, int level) {
+            String indent = "  ".repeat(Math.max(0, level));
+            sb.append(indent).append("- ").append(getName()).append("\n");
+        }
+    }
+
+    public class RootNode extends BaseSimpleNode {
+        protected RootNode() {
+            super(null);
+            getTemplatePresentation().setIcon(AllIcons.Actions.ModuleDirectory);
+            setIcon(AllIcons.Actions.ModuleDirectory);
+        }
+
         @Override
         public String getName() {
-            String name = myServiceItem.getName();
-/*            if (ToolkitIcons.METHOD.get(myServiceItem.getMethod()) == null && myServiceItem.getMethod() != null) {
-                name += " [" + myServiceItem.getMethod() + "]";
-            }*/
-            return name;
+            return "Found " + serviceCount + " services";
+        }
+
+        @Override
+        public void showPopupMenu(SimpleTree tree, int x, int y) {
+            JPopupMenu popup = new JPopupMenu();
+
+            JMenuItem expandAllItem = new JMenuItem("展开所有", AllIcons.Actions.Expandall);
+            expandAllItem.addActionListener(e -> {
+                for (int i = 0; i < myRootTreeNode.getChildCount(); i++) {
+                    TreeNode child = myRootTreeNode.getChildAt(i);
+                    TreePath path = new TreePath(new Object[]{myRootTreeNode, child});
+                    expandAllChildren(tree, path);
+                }
+            });
+            popup.add(expandAllItem);
+
+            JMenuItem collapseAllItem = new JMenuItem("收起所有", AllIcons.Actions.Collapseall);
+            collapseAllItem.addActionListener(e -> {
+                for (int i = 0; i < myRootTreeNode.getChildCount(); i++) {
+                    tree.collapseRow(i + 1);
+                }
+            });
+            popup.add(collapseAllItem);
+
+            popup.addSeparator();
+
+            JMenuItem copyItem = new JMenuItem("复制为 Markdown", AllIcons.Actions.Copy);
+            copyItem.addActionListener(e -> copyAsMarkdown());
+            popup.add(copyItem);
+
+            popup.show(tree, x, y);
+        }
+
+        private void expandAllChildren(JTree tree, TreePath parent) {
+            TreeNode node = (TreeNode) parent.getLastPathComponent();
+            tree.expandPath(parent);
+            for (int i = 0; i < node.getChildCount(); i++) {
+                TreeNode child = node.getChildAt(i);
+                TreePath path = parent.pathByAddingChild(child);
+                expandAllChildren(tree, path);
+            }
+        }
+
+        @Override
+        protected void buildMarkdown(StringBuilder sb, int level) {
+            sb.append("# ").append(getName()).append("\n\n");
+            for (ModuleNode moduleNode : moduleNodes) {
+                moduleNode.buildMarkdown(sb, 0);
+            }
+        }
+    }
+
+    // 模块节点
+    public class ModuleNode extends BaseSimpleNode {
+        private String moduleName;
+        private int restCount = 0;
+        private int feignCount = 0;
+        ServiceTypeNode restTypeNode;
+        ServiceTypeNode feignTypeNode;
+
+        public ModuleNode(SimpleNode parent, ModuleData data) {
+            super(parent);
+            this.moduleName = data.moduleName;
+            this.restCount = data.restCount;
+            this.feignCount = data.feignCount;
+
+            getTemplatePresentation().setIcon(ToolkitIcons.MODULE);
+            setIcon(ToolkitIcons.MODULE);
+
+            // 对服务排序
+            data.restServices.sort(Comparator.comparing(item -> item.getUrl() != null ? item.getUrl() : ""));
+            for (List<RestServiceItem> items : data.feignServices.values()) {
+                items.sort(Comparator.comparing(item -> item.getUrl() != null ? item.getUrl() : ""));
+            }
+
+            // 创建 Rest 类型节点
+            if (!data.restServices.isEmpty()) {
+                restTypeNode = new ServiceTypeNode(this, "REST", data.restServices, false);
+            }
+
+            // 创建 Feign 类型节点
+            if (!data.feignServices.isEmpty()) {
+                feignTypeNode = new ServiceTypeNode(this, "Feign", null, true);
+                for (Map.Entry<String, List<RestServiceItem>> entry : data.feignServices.entrySet()) {
+                    FeignDownstreamNode downstreamNode = new FeignDownstreamNode(feignTypeNode, entry.getKey(), entry.getValue());
+                    feignTypeNode.addDownstreamNode(downstreamNode);
+                }
+            }
+        }
+
+        @Override
+        public String getName() {
+            return moduleName + " (" + (restCount + feignCount) + ")";
+        }
+
+        @Override
+        protected void buildMarkdown(StringBuilder sb, int level) {
+            String indent = "  ".repeat(Math.max(0, level));
+            sb.append(indent).append("- **").append(moduleName).append("** (").append(restCount + feignCount).append(")\n");
+
+            if (restTypeNode != null) {
+                restTypeNode.buildMarkdown(sb, level + 1);
+            }
+            if (feignTypeNode != null) {
+                feignTypeNode.buildMarkdown(sb, level + 1);
+            }
+        }
+    }
+
+    // 服务类型节点 (Rest/Feign)
+    public class ServiceTypeNode extends BaseSimpleNode {
+        private String typeName;
+        List<ServiceNode> serviceNodes = new ArrayList<>();
+        List<FeignDownstreamNode> downstreamNodes = new ArrayList<>();
+        private boolean isFeign;
+        private int count = 0;
+
+        public ServiceTypeNode(SimpleNode parent, String typeName, List<RestServiceItem> services, boolean isFeign) {
+            super(parent);
+            this.typeName = typeName;
+            this.isFeign = isFeign;
+
+            if (isFeign) {
+                getTemplatePresentation().setIcon(ToolkitIcons.METHOD.FEIGN);
+                setIcon(ToolkitIcons.METHOD.FEIGN);
+            } else {
+                getTemplatePresentation().setIcon(AllIcons.Nodes.ModuleGroup);
+                setIcon(AllIcons.Nodes.ModuleGroup);
+            }
+
+            if (services != null) {
+                this.count = services.size();
+                for (RestServiceItem item : services) {
+                    serviceNodes.add(new ServiceNode(this, item));
+                }
+            }
+        }
+
+        public void addDownstreamNode(FeignDownstreamNode downstreamNode) {
+            downstreamNodes.add(downstreamNode);
+            count += downstreamNode.serviceNodes.size();
+        }
+
+        public boolean isEmpty() {
+            if (isFeign) {
+                return downstreamNodes.isEmpty();
+            }
+            return serviceNodes.isEmpty();
+        }
+
+        @Override
+        public String getName() {
+            return typeName + " (" + count + ")";
+        }
+
+        @Override
+        protected void buildMarkdown(StringBuilder sb, int level) {
+            String indent = "  ".repeat(Math.max(0, level));
+            sb.append(indent).append("- ").append(typeName).append(" (").append(count).append(")\n");
+
+            if (!isFeign) {
+                for (ServiceNode serviceNode : serviceNodes) {
+                    serviceNode.buildMarkdown(sb, level + 1);
+                }
+            } else {
+                for (FeignDownstreamNode downstreamNode : downstreamNodes) {
+                    downstreamNode.buildMarkdown(sb, level + 1);
+                }
+            }
+        }
+    }
+
+    // Feign 下游服务节点
+    public class FeignDownstreamNode extends BaseSimpleNode {
+        private String downstreamName;
+        List<ServiceNode> serviceNodes = new ArrayList<>();
+
+        public FeignDownstreamNode(SimpleNode parent, String downstreamName, List<RestServiceItem> services) {
+            super(parent);
+            this.downstreamName = downstreamName;
+
+            getTemplatePresentation().setIcon(ToolkitIcons.METHOD.FEIGN);
+            setIcon(ToolkitIcons.METHOD.FEIGN);
+
+            if (services != null) {
+                for (RestServiceItem item : services) {
+                    serviceNodes.add(new ServiceNode(this, item));
+                }
+            }
+        }
+
+        @Override
+        public String getName() {
+            return downstreamName + " (" + serviceNodes.size() + ")";
+        }
+
+        @Override
+        protected void buildMarkdown(StringBuilder sb, int level) {
+            String indent = "  ".repeat(Math.max(0, level));
+            sb.append(indent).append("- ").append(downstreamName).append(" (").append(serviceNodes.size()).append(")\n");
+
+            for (ServiceNode serviceNode : serviceNodes) {
+                serviceNode.buildMarkdown(sb, level + 1);
+            }
+        }
+    }
+
+    // 服务节点
+    public class ServiceNode extends BaseSimpleNode {
+        RestServiceItem myServiceItem;
+
+        public ServiceNode(SimpleNode parent, RestServiceItem serviceItem) {
+            super(parent);
+            myServiceItem = serviceItem;
+
+            String downstream = serviceItem.getDownstreamService();
+            if (downstream != null && !downstream.isEmpty()) {
+                getTemplatePresentation().setIcon(ToolkitIcons.METHOD.FEIGN);
+                setIcon(ToolkitIcons.METHOD.FEIGN);
+            } else {
+                Icon icon = ToolkitIcons.METHOD.get(serviceItem.getMethod());
+                if (icon != null) {
+                    getTemplatePresentation().setIcon(icon);
+                    setIcon(icon);
+                }
+            }
+        }
+
+        @Override
+        public String getName() {
+            return myServiceItem.getName();
         }
 
         @Override
         public void handleSelection(SimpleTree tree) {
-            ServiceNode selectedNode = (ServiceNode) tree.getSelectedNode();
-            showServiceDetail(selectedNode.myServiceItem);
+            showServiceDetail(myServiceItem);
         }
 
-        /**
-         * 显示服务详情，url
-         */
         private void showServiceDetail(RestServiceItem serviceItem) {
             if (myRestServiceDetail == null) {
                 return;
@@ -390,11 +686,9 @@ public class RestServiceStructure extends SimpleTreeStructure {
                     requestParams = ktFunctionHelper.buildParamString();
                     requestBodyJson = ktFunctionHelper.buildRequestBodyJson();
                 }
-
             }
 
             myRestServiceDetail.addRequestParamsTab(requestParams);
-
 
             if (isNotBlank(requestBodyJson)) {
                 myRestServiceDetail.addRequestBodyTabPanel(requestBodyJson);
@@ -403,16 +697,9 @@ public class RestServiceStructure extends SimpleTreeStructure {
 
         @Override
         public void handleDoubleClickOrEnter(SimpleTree tree, InputEvent inputEvent) {
-            ServiceNode selectedNode = (ServiceNode) tree.getSelectedNode();
-
-            RestServiceItem myServiceItem = selectedNode.myServiceItem;
             PsiElement psiElement = myServiceItem.getPsiElement();
 
             if (!psiElement.isValid()) {
-                // PsiDocumentManager.getInstance(psiMethod.getProject()).commitAllDocuments();
-                // try refresh service
-                LOG.info("psiMethod is invalid: ");
-                LOG.info(psiElement.toString());
                 RestServicesNavigator.getInstance(myServiceItem.getModule().getProject()).scheduleStructureUpdate();
             }
 
@@ -429,20 +716,29 @@ public class RestServiceStructure extends SimpleTreeStructure {
         }
 
         @Override
-        @Nullable
-        @NonNls
-        protected String getMenuId() {
-            return "Toolkit.NavigatorServiceMenu";
+        public void showPopupMenu(SimpleTree tree, int x, int y) {
+            JPopupMenu popup = new JPopupMenu();
+
+            JMenuItem copyUrlItem = new JMenuItem("复制完整 URL", AllIcons.Actions.Copy);
+            copyUrlItem.addActionListener(e -> {
+                String url = myServiceItem.getFullUrl();
+                CopyPasteManager.getInstance().setContents(new StringSelection(url));
+            });
+            popup.add(copyUrlItem);
+
+            JMenuItem copyItem = new JMenuItem("复制为 Markdown", AllIcons.Actions.Copy);
+            copyItem.addActionListener(e -> copyAsMarkdown());
+            popup.add(copyItem);
+
+            popup.show(tree, x, y);
         }
 
-/*
         @Override
-        @Nullable
-        @NonNls
-        protected String getActionId() {
-            return "Toolkit.Navigator";
-        }*/
-
+        protected void buildMarkdown(StringBuilder sb, int level) {
+            String indent = "  ".repeat(Math.max(0, level));
+            String method = myServiceItem.getMethod() != null ? myServiceItem.getMethod().name() : "GET";
+            sb.append(indent).append("- [").append(method).append("] ").append(myServiceItem.getUrl()).append("\n");
+        }
     }
 
     private static boolean isNotBlank(String str) {
