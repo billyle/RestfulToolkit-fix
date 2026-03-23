@@ -162,10 +162,14 @@ public class FeignResolver extends BaseServiceResolver {
     }
     
     private String concatenatePaths(String basePath, String methodPath) {
-        if (basePath == null) basePath = "";
-        if (methodPath == null) methodPath = "";
+        if (basePath == null) {
+            basePath = "";
+        }
+        if (methodPath == null) {
+            methodPath = "";
+        }
         
-        if (basePath.equals("/") && methodPath.startsWith("/")) {
+        if ("/".equals(basePath) && methodPath.startsWith("/")) {
             return methodPath;
         }
         

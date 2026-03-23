@@ -90,6 +90,7 @@ public class RestServicesNavigatorPanel extends SimpleToolWindowPanel implements
 
         // popup
         myTree.addMouseListener(new PopupHandler() {
+            @Override
             public void invokePopup(final Component comp, final int x, final int y) {
                 final String id = getMenuId(getSelectedNodes(RestServiceStructure.BaseSimpleNode.class));
                 if (id != null) {
@@ -128,6 +129,7 @@ public class RestServicesNavigatorPanel extends SimpleToolWindowPanel implements
         return RestServiceStructure.getSelectedNodes(myTree, aClass);
     }
 
+    @Override
     @Nullable
     public Object getData(@NonNls String dataId) {
 

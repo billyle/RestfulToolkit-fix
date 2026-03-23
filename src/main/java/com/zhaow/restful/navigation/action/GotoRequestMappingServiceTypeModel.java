@@ -100,7 +100,9 @@ public class GotoRequestMappingServiceTypeModel extends FilteringGotoByModel<Ser
     @Override
     public boolean matches(@NotNull String popupItem, @NotNull String userPattern) {
         String pattern = userPattern;
-        if(pattern.equals("/")) return true;
+        if("/".equals(pattern)) {
+            return true;
+        }
         MinusculeMatcher matcher = NameUtil.buildMatcher("*" + pattern, NameUtil.MatchingCaseSensitivity.NONE);
         boolean matches = matcher.matches(popupItem);
         if (!matches) {

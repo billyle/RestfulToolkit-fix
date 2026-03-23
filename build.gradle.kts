@@ -41,16 +41,17 @@ intellij {
     )
 //     version = "2021.3"
 //     version .set( "2021.1.3")
-     version.set("2023.3.7")
+//     version.set("2023.3.7")  // 注释掉，使用 localPath 代替
 //    version.set("2022.1.4")
-//    localPath =
-//        "/Users/jinghong/Library/Application Support/JetBrains/Toolbox/apps/IDEA-U/ch-0/222.3345.90/IntelliJ IDEA.app/Contents"
+    // 使用本地 IDEA 安装路径，会自动使用其 JBR
+    // localPath.set("C:/Program Files/JetBrains/IntelliJ IDEA 2025.3.2")
+    version.set("2023.3.7")
     pluginName.set("RestfulToolkit-fix")
     updateSinceUntilBuild.set(false)
     downloadSources.set(true)
 }
 
-// 禁用代码instrument，解决JDK路径问题
+// 禁用代码检测任务，避免JDK路径问题
 tasks.named("instrumentCode") {
     enabled = false
 }
@@ -61,7 +62,7 @@ tasks.named("buildSearchableOptions") {
 }
 
 group = "me.jinghong.restful.toolkit"
-version = "2.1.21"
+version = "2.1.22"
 
 repositories {
     mavenLocal()

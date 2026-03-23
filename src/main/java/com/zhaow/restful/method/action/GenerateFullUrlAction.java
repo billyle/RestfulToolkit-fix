@@ -18,51 +18,38 @@ import java.util.List;
 import static com.intellij.openapi.actionSystem.CommonDataKeys.PSI_ELEMENT;
 
 /**
- * 生成并复制restful url
- * tood: 没考虑RequestMapping 多个值的情况
+ * 生成并复制完整URL（带域名）
  */
-public class
-GenerateFullUrlAction extends SpringAnnotatedMethodAction {
+public class GenerateFullUrlAction extends SpringAnnotatedMethodAction {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
-
         Module module = myModule(e);
-        PsiElement psiElement = e.getData(PSI_ELEMENT);
-        if (psiElement instanceof PsiMethod) {
-            PsiMethod psiMethod = (PsiMethod) psiElement;
+        Editor myEditor = e.getData(CommonDataKeys.EDITOR);
+        PsiMethod psiMethod = getPsiMethod(e);
 
-            ModuleHelper moduleHelper = ModuleHelper.create(module);
-
-//            String url = moduleHelper.buildFullUrlWithParams(psiMethod);
-
+        if (psiMethod != null) {
             String url = PsiMethodHelper.create(psiMethod).withModule(module).buildFullUrlWithParams();
-
             CopyPasteManager.getInstance().setContents(new StringSelection(url));
-            Editor myEditor = e.getData(CommonDataKeys.EDITOR);
             if (myEditor != null) {
-                showPopupBalloon("复制成功", myEditor);
+                showPopupBalloon("复制成功: " + url, myEditor);
             }
         }
 
+        // 处理 Kotlin 函数
+        PsiElement psiElement = e.getData(PSI_ELEMENT);
         if (psiElement instanceof KtNamedFunction) {
             KtNamedFunction ktNamedFunction = (KtNamedFunction) psiElement;
             PsiElement parentPsi = psiElement.getParent().getParent();
             if (parentPsi instanceof KtClassOrObject) {
-//                KtLightClass ktLightClass = LightClassUtilsKt.toLightClass(((KtClassOrObject) parentPsi));
-
                 List<PsiMethod> psiMethods = LightClassUtilsKt.toLightMethods(ktNamedFunction);
-                PsiMethod psiMethod = psiMethods.get(0);
-                ModuleHelper moduleHelper = ModuleHelper.create(module);
-
-                String url = PsiMethodHelper.create(psiMethod).withModule(module).buildFullUrlWithParams();
-
+                PsiMethod ktPsiMethod = psiMethods.get(0);
+                String url = PsiMethodHelper.create(ktPsiMethod).withModule(module).buildFullUrlWithParams();
                 CopyPasteManager.getInstance().setContents(new StringSelection(url));
-
+                if (myEditor != null) {
+                    showPopupBalloon("复制成功: " + url, myEditor);
+                }
             }
-
         }
-
     }
-
 }

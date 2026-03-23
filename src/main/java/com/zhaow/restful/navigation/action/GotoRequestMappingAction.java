@@ -31,7 +31,9 @@ public class GotoRequestMappingAction extends GotoActionBase implements DumbAwar
     protected void gotoActionPerformed(AnActionEvent e) {
         //进入导航
         Project project = e.getProject();
-        if (project == null) return;
+        if (project == null) {
+            return;
+        }
 
         FeatureUsageTracker.getInstance().triggerFeatureUsed("navigation.popup.service");
 

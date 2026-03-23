@@ -27,7 +27,9 @@ public class RequestMappingAnnotationHelper implements RestSupportedAnnotationHe
      */
     public static List<RequestPath> getRequestPaths(PsiClass psiClass) {
         PsiAnnotation[] annotations = psiClass.getModifierList().getAnnotations();
-        if(annotations == null) return null;
+        if(annotations == null) {
+            return null;
+        }
 
         PsiAnnotation requestMappingAnnotation = null;
         List<RequestPath> list = new ArrayList<>();
@@ -48,7 +50,7 @@ public class RequestMappingAnnotationHelper implements RestSupportedAnnotationHe
         } else {
             // TODO : 继承 RequestMapping
             PsiClass superClass = psiClass.getSuperClass();
-            if (superClass != null && !superClass.getQualifiedName().equals("java.lang.Object")) {
+            if (superClass != null && !"java.lang.Object".equals(superClass.getQualifiedName())) {
                 list = getRequestPaths(superClass);
             } else {
                 list.add(new RequestPath("/", null));
@@ -61,7 +63,9 @@ public class RequestMappingAnnotationHelper implements RestSupportedAnnotationHe
 
     public static String[] getRequestMappingValues(PsiClass psiClass) {
         PsiAnnotation[] annotations = psiClass.getModifierList().getAnnotations();
-        if(annotations == null) return null;
+        if(annotations == null) {
+            return null;
+        }
 
         for (PsiAnnotation annotation : annotations) {
             if (annotation.getQualifiedName().equals(SpringRequestMethodAnnotation.REQUEST_MAPPING.getQualifiedName())) {
@@ -135,7 +139,9 @@ public class RequestMappingAnnotationHelper implements RestSupportedAnnotationHe
     public static RequestPath[] getRequestPaths(PsiMethod psiMethod) {
         PsiAnnotation[] annotations = psiMethod.getModifierList().getAnnotations();
 
-        if(annotations == null) return null;
+        if(annotations == null) {
+            return null;
+        }
         List<RequestPath> list = new ArrayList<>();
 
         for (PsiAnnotation annotation : annotations) {
@@ -163,8 +169,9 @@ public class RequestMappingAnnotationHelper implements RestSupportedAnnotationHe
 //        String value = psiAnnotationMemberValue.getText().replace("\"","");
 //        if(psiAnnotationMemberValue.)
 
-        if (isEmpty(value))
+        if (isEmpty(value)) {
             value = PsiAnnotationHelper.getAnnotationAttributeValue(annotation,"path");
+        }
         return value;
     }
 

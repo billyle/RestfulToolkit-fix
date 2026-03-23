@@ -71,6 +71,7 @@ public class RestServiceChooseByNamePopup extends ChooseByNamePopup {
   }
 
 
+  @Override
   @Nullable
   public String getMemberPattern() {
     final String enteredText = getTrimmedText();

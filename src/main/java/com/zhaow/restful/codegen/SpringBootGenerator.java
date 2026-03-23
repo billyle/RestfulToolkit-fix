@@ -52,8 +52,6 @@ public class SpringBootGenerator extends AnAction {
         String content = editor.getDocument().getText();
 
 
-
-
 //        createPackage();
 //        createFile()
 
@@ -66,7 +64,7 @@ public class SpringBootGenerator extends AnAction {
     }
 
 
-    public void createFile(String fileName,String content) {
+    public void createFile(String fileName, String content) {
         PsiFile psiFile = PsiFileFactory.getInstance(project).createFileFromText(fileName, FileTypes.PLAIN_TEXT, content);
 
         PsiDirectory directory = PsiManager.getInstance(project).findDirectory(project.getBaseDir());
@@ -81,7 +79,7 @@ public class SpringBootGenerator extends AnAction {
         }
     }
 
-    private String genFromTemplate(String templateName, Map<String ,String > dataMap) {
+    private String genFromTemplate(String templateName, Map<String, String> dataMap) {
 
         VelocityContext context = new VelocityContext();
 
@@ -110,7 +108,7 @@ public class SpringBootGenerator extends AnAction {
     // 创建目录，文件
     private void createController(String basePackage, String path, String modelName) {
 
-        createFile(modelName +"Controller" , genFromTemplate("controller",new HashMap<>())) ;
+        createFile(modelName + "Controller", genFromTemplate("controller", new HashMap<>()));
     }
 
     private void refreshProject(AnActionEvent e) {

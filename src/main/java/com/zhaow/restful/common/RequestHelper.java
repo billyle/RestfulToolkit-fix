@@ -234,8 +234,9 @@ public class RequestHelper {
             e.printStackTrace();
         }
 
-        if(result != null && JsonUtils.isValidJson(result))
+        if(result != null && JsonUtils.isValidJson(result)) {
             return JsonUtils.format(result);
+        }
 
         return "";
     }

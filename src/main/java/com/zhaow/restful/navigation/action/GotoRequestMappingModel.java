@@ -136,7 +136,9 @@ public class GotoRequestMappingModel extends FilteringGotoByModel<HttpMethod> im
     @Override
     public boolean matches(@NotNull String popupItem, @NotNull String userPattern) {
         String pattern = userPattern;
-        if(pattern.equals("/")) return true;
+        if("/".equals(pattern)) {
+            return true;
+        }
         // REST风格的参数  @RequestMapping(value="{departmentId}/employees/{employeeId}")  PathVariable
         // REST风格的参数（正则） @RequestMapping(value="/{textualPart:[a-z-]+}.{numericPart:[\\d]+}")  PathVariable
 

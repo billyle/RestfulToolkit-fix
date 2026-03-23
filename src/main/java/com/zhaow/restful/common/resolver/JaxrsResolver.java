@@ -93,7 +93,9 @@ public class JaxrsResolver extends BaseServiceResolver  {
                 PsiModifierList psiModifierList = (PsiModifierList) psiAnnotation.getParent();
                 PsiElement psiElement = psiModifierList.getParent();
 
-                if (!(psiElement instanceof PsiClass)) continue;
+                if (!(psiElement instanceof PsiClass)) {
+                    continue;
+                }
 
                 PsiClass psiClass = (PsiClass) psiElement;
                 // 获取模块信息

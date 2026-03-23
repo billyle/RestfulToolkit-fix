@@ -101,13 +101,20 @@ public class RestServiceStructure extends SimpleTreeStructure {
         // 设置树的选择监听器
         tree.addTreeSelectionListener(e -> {
             TreePath path = e.getPath();
+            LOG.info("[TreeSelection] Selection event, path: " + path);
             if (path != null) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
                 Object userObject = node.getUserObject();
+                LOG.info("[TreeSelection] userObject class: " + (userObject != null ? userObject.getClass().getSimpleName() : "null"));
                 if (userObject instanceof BaseSimpleNode) {
-                    // 需要在读操作中执行，避免线程访问错误
+                    LOG.info("[TreeSelection] Calling handleSelection in runReadAction");
+                    // 需要在读操作中执行，因为会访问 PSI 和索引
                     ApplicationManager.getApplication().runReadAction(() -> {
-                        ((BaseSimpleNode) userObject).handleSelection(tree);
+                        try {
+                            ((BaseSimpleNode) userObject).handleSelection(tree);
+                        } catch (Exception ex) {
+                            LOG.error("Error handling selection", ex);
+                        }
                     });
                 }
             }
@@ -336,10 +343,12 @@ public class RestServiceStructure extends SimpleTreeStructure {
             return null;
         }
 
+        @Override
         public void handleSelection(SimpleTree tree) {
             resetRestServiceDetail();
         }
 
+        @Override
         public void handleDoubleClickOrEnter(SimpleTree tree, InputEvent inputEvent) {
         }
 
@@ -656,20 +665,33 @@ public class RestServiceStructure extends SimpleTreeStructure {
         }
 
         @Override
+        public String getMenuId() {
+            return "Toolkit.NavigatorServiceMenu";
+        }
+
+        @Override
         public void handleSelection(SimpleTree tree) {
+            LOG.info("[ServiceNode] handleSelection called for: " + myServiceItem.getName());
             showServiceDetail(myServiceItem);
         }
 
         private void showServiceDetail(RestServiceItem serviceItem) {
+            LOG.info("[ServiceNode] showServiceDetail called, myRestServiceDetail is null: " + (myRestServiceDetail == null));
             if (myRestServiceDetail == null) {
+                LOG.error("[ServiceNode] myRestServiceDetail is null, cannot show detail");
                 return;
             }
 
+            LOG.info("[ServiceNode] resetRequestTabbedPane called");
             myRestServiceDetail.resetRequestTabbedPane();
 
             String method = serviceItem.getMethod() != null ? String.valueOf(serviceItem.getMethod()) : HttpMethod.GET.name();
+            LOG.info("[ServiceNode] Setting method: " + method);
             myRestServiceDetail.setMethodValue(method);
-            myRestServiceDetail.setUrlValue(serviceItem.getFullUrl());
+
+            String fullUrl = serviceItem.getFullUrl();
+            LOG.info("[ServiceNode] Setting URL: " + fullUrl);
+            myRestServiceDetail.setUrlValue(fullUrl);
 
             String requestParams = "";
             String requestBodyJson = "";
@@ -688,8 +710,12 @@ public class RestServiceStructure extends SimpleTreeStructure {
                 }
             }
 
-            myRestServiceDetail.addRequestParamsTab(requestParams);
+            // 只有在有请求参数时才添加请求参数标签页
+            if (isNotBlank(requestParams)) {
+                myRestServiceDetail.addRequestParamsTab(requestParams);
+            }
 
+            // 只有在有请求体时才添加请求体标签页
             if (isNotBlank(requestBodyJson)) {
                 myRestServiceDetail.addRequestBodyTabPanel(requestBodyJson);
             }

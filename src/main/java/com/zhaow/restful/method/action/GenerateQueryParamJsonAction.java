@@ -22,33 +22,20 @@ public class GenerateQueryParamJsonAction extends SpringAnnotatedMethodAction {
 
     @Override
     public void actionPerformed(AnActionEvent e) {
+        Editor myEditor = e.getData(CommonDataKeys.EDITOR);
+        PsiMethod psiMethod = getPsiMethod(e);
 
-        //  @RequestBody entity 生成 json
-
-        PsiMethod psiMethod = null;
-        PsiElement psiElement = e.getData(CommonDataKeys.PSI_ELEMENT);
-        if (psiElement instanceof PsiMethod) {
-            psiMethod = (PsiMethod) psiElement;
-        }
-
-        if (psiElement instanceof KtNamedFunction) {
-            KtNamedFunction ktNamedFunction = (KtNamedFunction) psiElement;
-            PsiElement parentPsi = psiElement.getParent().getParent();
-            if (parentPsi instanceof KtClassOrObject) {
-                List<PsiMethod> psiMethods = LightClassUtilsKt.toLightMethods(ktNamedFunction);
-                psiMethod = psiMethods.get(0);
-            }
+        if (psiMethod == null) {
+            return;
         }
 
         PsiMethodHelper psiMethodHelper = PsiMethodHelper.create(psiMethod);
         List<Parameter> parameterList = psiMethodHelper.getParameterList();
-//JavaShortClassNameIndex.getInstance().get("Product",myProject(e), GlobalSearchScope.projectScope(myProject(e)))
+
         for (Parameter parameter : parameterList) {
             if (parameter.isRequestBodyFound()) {
                 String queryJson = psiMethodHelper.buildRequestBodyJson(parameter);
-
                 CopyPasteManager.getInstance().setContents(new StringSelection(queryJson));
-                Editor myEditor = e.getData(CommonDataKeys.EDITOR);
                 if (myEditor != null) {
                     showPopupBalloon("复制成功", myEditor);
                 }

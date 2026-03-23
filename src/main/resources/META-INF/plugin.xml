@@ -1,7 +1,7 @@
 <idea-plugin url="https://plugins.jetbrains.com/plugin/16788-restfultoolkit-fix" allow-bundled-update="true">
     <id>me.jinghong.restful.toolkit</id>
     <name>RestfulToolkit-fix</name>
-    <version>2.1.21</version>
+    <version>2.1.22</version>
     <vendor email="libinjava@qq.com" url="https://github.com/billyle">billyle (原作者: jinghong)</vendor>
 
     <description><![CDATA[
@@ -41,6 +41,15 @@
     ]]></description>
 
     <change-notes><![CDATA[
+        <li>2.1.22 Fixed right-click context menu issues:<br/>
+            - Fixed menu not showing in code editor for RestController methods<br/>
+            - Fixed menu grayed out (disabled) when right-clicking on methods<br/>
+            - Added "Generate && Copy Relation URL" menu item for relative URL<br/>
+            - Fixed duplicate menu items in context menu<br/>
+            - Added Feign interface support for right-click menu actions<br/>
+            - Fixed Query Param generation returning empty content<br/>
+            - Fixed PsiMethod detection from editor cursor position
+        </li>
         <li>2.1.21 Major refactoring for IDE 2025.3 compatibility:<br/>
             - Replaced deprecated SimpleTreeBuilder with DefaultTreeModel for tree structure<br/>
             - Implemented multi-level tree: Module -> ServiceType(Rest/Feign) -> DownstreamService -> Endpoint<br/>
@@ -148,23 +157,20 @@
         <!--rest 方法中添加-->
         <group id="RestfulToolkitGroup" text="RestfulToolkit"
                description="RESTful Toolkit actions for rest method group"
+               popup="true"
         >
-            <!--<add-to-group group-id="EditorPopupMenu" anchor="first"/>-->
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             <action class="com.zhaow.restful.method.action.GenerateFullUrlAction" id="GenerateFullRestUrl"
                     text="Generate &amp;&amp; Copy Full URL">
-                <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             </action>
             <action class="com.zhaow.restful.method.action.GenerateUrlAction" id="GenerateRestUrl"
                     text="Generate &amp;&amp; Copy Relation URL">
-                <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             </action>
             <action class="com.zhaow.restful.method.action.GenerateQueryParamJsonAction" id="GenerateRequestBodyJson"
                     text="Generate &amp;&amp; Copy RequestBody (JSON)">
-                <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             </action>
             <action class="com.zhaow.restful.method.action.GenerateQueryParamAction" id="BuildQueryParam"
                     text="Generate &amp;&amp; Copy Query Param (Key Value)">
-                <add-to-group group-id="EditorPopupMenu" anchor="first"/>
             </action>
             <!--jaxrs-->
 

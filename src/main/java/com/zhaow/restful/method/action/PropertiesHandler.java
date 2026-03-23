@@ -106,7 +106,7 @@ public class PropertiesHandler {
             for (String ext : getFileExtensions()) {
                 // load spring config file
                 String configFile = conf + profile + "." +  ext;
-                if (ext.equals("properties")) {
+                if ("properties".equals(ext)) {
                     Properties properties = loadProertiesFromConfigFile(configFile);
                     if (properties != null) {
                         Object valueObj = properties.getProperty(propertyKey);
@@ -116,11 +116,13 @@ public class PropertiesHandler {
                         }
                     }
 
-                } else if(ext.equals("yml") || ext.equals("yaml")) {
+                } else if("yml".equals(ext) || "yaml".equals(ext)) {
                     Map<String, Object> propertiesMap = getPropertiesMapFromYamlFile(configFile);
                     if (propertiesMap != null) {
                         Object valueObj = propertiesMap.get(propertyKey);
-                        if (valueObj == null) return null;
+                        if (valueObj == null) {
+                            return null;
+                        }
 
                         if (valueObj instanceof String) {
                             value = cleanPlaceholderIfExist((String)valueObj);

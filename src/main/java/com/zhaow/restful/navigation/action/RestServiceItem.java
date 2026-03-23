@@ -86,7 +86,9 @@ public class RestServiceItem implements NavigationItem {
     /*匹配*/
     public boolean matches(String queryText) {
         String pattern = queryText;
-        if (pattern.equals("/")) return true;
+        if ("/".equals(pattern)) {
+            return true;
+        }
 
         com.intellij.psi.codeStyle.MinusculeMatcher matcher = com.intellij.psi.codeStyle.NameUtil.buildMatcher("*" + pattern, com.intellij.psi.codeStyle.NameUtil.MatchingCaseSensitivity.NONE);
         return matcher.matches(this.url);

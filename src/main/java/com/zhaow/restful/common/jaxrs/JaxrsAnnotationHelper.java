@@ -29,7 +29,9 @@ public class JaxrsAnnotationHelper {
      */
     public static RequestPath[] getRequestPaths(PsiMethod psiMethod) {
         PsiAnnotation[] annotations = psiMethod.getModifierList().getAnnotations();
-        if(annotations == null) return null;
+        if(annotations == null) {
+            return null;
+        }
         List<RequestPath> list = new ArrayList<>();
 
         PsiAnnotation wsPathAnnotation = psiMethod.getModifierList().findAnnotation(JaxrsPathAnnotation.PATH.getQualifiedName());

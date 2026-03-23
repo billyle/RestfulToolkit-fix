@@ -25,6 +25,7 @@ public class KtFunctionHelper extends PsiMethodHelper {
         return new KtFunctionHelper(psiMethod);
     }
 
+    @Override
     public KtFunctionHelper withModule(Module module) {
         this.myModule = module;
         return this;

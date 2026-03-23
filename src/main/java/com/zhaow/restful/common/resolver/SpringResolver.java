@@ -384,15 +384,18 @@ public class SpringResolver  extends BaseServiceResolver  {
 //        KtValueArgumentList valueArgumentList = entry.getValueArgumentList();
         if (entry.getValueArgumentList() != null) {
             List<String> mappingValues = getAttributeValues(entry, null);
-            if(!mappingValues.isEmpty() )
+            if(!mappingValues.isEmpty() ) {
                 pathList.addAll(mappingValues);
-            else
+            } else {
                 pathList.addAll(getAttributeValues(entry, "value")); // path
+            }
 
             pathList.addAll(getAttributeValues(entry, "path")); // path
         }
 
-        if(pathList.isEmpty()) pathList.add(defaultPath); //没指定参数
+        if(pathList.isEmpty()) {
+            pathList.add(defaultPath); //没指定参数
+        }
 
         if (methodList.size() > 0) {
             for (String method : methodList) {
@@ -412,7 +415,9 @@ public class SpringResolver  extends BaseServiceResolver  {
     private List<String> getAttributeValues(KtAnnotationEntry entry, String attribute) {
         KtValueArgumentList valueArgumentList = entry.getValueArgumentList();
 
-        if(valueArgumentList == null) return Collections.emptyList();
+        if(valueArgumentList == null) {
+            return Collections.emptyList();
+        }
 
         List<KtValueArgument> arguments = valueArgumentList.getArguments();
 
@@ -484,10 +489,14 @@ public class SpringResolver  extends BaseServiceResolver  {
     }
 
     private String concatenatePaths(String basePath, String methodPath) {
-        if (basePath == null) basePath = "";
-        if (methodPath == null) methodPath = "";
+        if (basePath == null) {
+            basePath = "";
+        }
+        if (methodPath == null) {
+            methodPath = "";
+        }
         
-        if (basePath.equals("/") && methodPath.startsWith("/")) {
+        if ("/".equals(basePath) && methodPath.startsWith("/")) {
             return methodPath;
         }
         

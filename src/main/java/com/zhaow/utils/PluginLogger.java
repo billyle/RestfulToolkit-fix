@@ -129,6 +129,11 @@ public class PluginLogger {
     public void error(String message) {
         log("ERROR", message);
     }
+
+    public void error(String message, Exception ex) {
+        log("ERROR", message + ": " + ex.getMessage());
+        ex.printStackTrace();
+    }
     
     public void debug(String message) {
         log("DEBUG", message);

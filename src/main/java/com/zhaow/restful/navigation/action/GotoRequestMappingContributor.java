@@ -35,7 +35,9 @@ public class GotoRequestMappingContributor implements ChooseByNameContributor {
 
         navItem = itemList;
 
-        if (itemList != null) names = new String[itemList.size()];
+        if (itemList != null) {
+            names = new String[itemList.size()];
+        }
 
         for (int i = 0; i < itemList.size(); i++) {
             RestServiceItem requestMappingNavigationItem = itemList.get(i);

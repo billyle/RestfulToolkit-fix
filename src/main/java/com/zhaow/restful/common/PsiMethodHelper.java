@@ -12,6 +12,7 @@ import com.intellij.psi.PsiMethod;
 import com.intellij.psi.PsiModifierList;
 import com.intellij.psi.PsiParameter;
 import com.intellij.psi.PsiParameterList;
+import com.zhaow.restful.annotations.FeignClientAnnotation;
 import com.zhaow.restful.annotations.JaxrsRequestAnnotation;
 import com.zhaow.restful.annotations.SpringControllerAnnotation;
 import com.zhaow.restful.common.jaxrs.JaxrsAnnotationHelper;
@@ -155,9 +156,10 @@ public class PsiMethodHelper {
             //忽略 request response
 
             String paramType = psiParameter.getType().getCanonicalText();
-            if (paramType.equals("javax.servlet.http.HttpServletRequest")
-                    || paramType.equals("javax.servlet.http.HttpServletResponse"))
+            if ("javax.servlet.http.HttpServletRequest".equals(paramType)
+                    || "javax.servlet.http.HttpServletResponse".equals(paramType)) {
                 continue;
+            }
             //必传参数 @RequestParam
             PsiModifierList modifierList = psiParameter.getModifierList();
             boolean requestBodyFound = modifierList.findAnnotation(REQUEST_BODY.getQualifiedName()) != null;
@@ -230,11 +232,15 @@ public class PsiMethodHelper {
         String ctrlPath = null;
         String methodPath = null;
 
-        //判断rest服务提供方式 spring or jaxrs
+        //判断rest服务提供方式 spring, feign or jaxrs
         PsiClass containingClass = psiMethod.getContainingClass();
         RestSupportedAnnotationHelper annotationHelper;
         if (isSpringRestSupported(containingClass)) {
             ctrlPath = RequestMappingAnnotationHelper.getOneRequestMappingPath(containingClass);
+            methodPath = RequestMappingAnnotationHelper.getOneRequestMappingPath(psiMethod);
+        } else if (isFeignClient(containingClass)) {
+            // FeignClient: 获取 @FeignClient 的 path 属性
+            ctrlPath = getFeignClientPath(containingClass);
             methodPath = RequestMappingAnnotationHelper.getOneRequestMappingPath(psiMethod);
         } else if (isJaxrsRestSupported(containingClass)) {
             ctrlPath = JaxrsAnnotationHelper.getClassUriPath(containingClass);
@@ -261,6 +267,32 @@ public class PsiMethodHelper {
         return ctrlPath + methodPath;
     }
 
+    /**
+     * 获取 FeignClient 的 path 属性
+     */
+    private String getFeignClientPath(PsiClass containingClass) {
+        if (containingClass == null || containingClass.getModifierList() == null) {
+            return "/";
+        }
+        PsiModifierList modifierList = containingClass.getModifierList();
+        PsiAnnotation feignAnnotation = modifierList.findAnnotation(FeignClientAnnotation.FEIGN_CLIENT.getQualifiedName());
+        if (feignAnnotation == null) {
+            return "/";
+        }
+        PsiAnnotationMemberValue pathValue = feignAnnotation.findDeclaredAttributeValue("path");
+        if (pathValue instanceof PsiLiteralExpression) {
+            Object value = ((PsiLiteralExpression) pathValue).getValue();
+            if (value != null) {
+                String path = value.toString();
+                if (!path.startsWith("/")) {
+                    path = "/" + path;
+                }
+                return path;
+            }
+        }
+        return "/";
+    }
+
     @NotNull
     public String buildServiceUriPathWithParams() {
         String serviceUriPath = buildServiceUriPath();
@@ -276,19 +308,30 @@ public class PsiMethodHelper {
 
     //包含 "RestController" "Controller"
     public static boolean isSpringRestSupported(PsiClass containingClass) {
+        if (containingClass == null || containingClass.getModifierList() == null) {
+            return false;
+        }
         PsiModifierList modifierList = containingClass.getModifierList();
-
-        /*return modifierList.findAnnotation(SpringControllerAnnotation.REST_CONTROLLER.getQualifiedName()) != null ||
-                modifierList.findAnnotation(SpringControllerAnnotation.CONTROLLER.getQualifiedName()) != null ;*/
 
         return modifierList.findAnnotation(SpringControllerAnnotation.REST_CONTROLLER.getQualifiedName()) != null ||
                 modifierList.findAnnotation(SpringControllerAnnotation.CONTROLLER.getQualifiedName()) != null;
     }
 
+    // FeignClient
+    public static boolean isFeignClient(PsiClass containingClass) {
+        if (containingClass == null || containingClass.getModifierList() == null) {
+            return false;
+        }
+        PsiModifierList modifierList = containingClass.getModifierList();
+        return modifierList.findAnnotation(FeignClientAnnotation.FEIGN_CLIENT.getQualifiedName()) != null;
+    }
+
     //包含 "RestController" "Controller"
     public static boolean isJaxrsRestSupported(PsiClass containingClass) {
+        if (containingClass == null || containingClass.getModifierList() == null) {
+            return false;
+        }
         PsiModifierList modifierList = containingClass.getModifierList();
-
         return modifierList.findAnnotation(JaxrsRequestAnnotation.PATH.getQualifiedName()) != null;
     }
 

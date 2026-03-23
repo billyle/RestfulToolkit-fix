@@ -72,7 +72,9 @@ public class PsiClassHelper {
 
     public String convertClassToJSON(Project project , boolean prettyFormat) {
         GsonBuilder gsonBuilder = new GsonBuilder();
-        if(prettyFormat) gsonBuilder.setPrettyPrinting();
+        if(prettyFormat) {
+            gsonBuilder.setPrettyPrinting();
+        }
         Gson gson = gsonBuilder.create() ;
         Map<String, Object> jsonMap = new HashMap<>();
 
@@ -130,7 +132,7 @@ public class PsiClassHelper {
         if (psiFieldType instanceof PsiClassReferenceType) {
             String className = ((PsiClassReferenceType) psiFieldType).getClassName();
 //            PsiUtil.getTopLevelClass(psiFieldType);
-            if (className.equalsIgnoreCase("List") || className.equalsIgnoreCase("ArrayList")) {
+            if ("List".equalsIgnoreCase(className) || "ArrayList".equalsIgnoreCase(className)) {
 
                 PsiType[] parameters = ((PsiClassReferenceType) psiFieldType).getParameters();
                 if (parameters != null && parameters.length > 0) {
@@ -149,7 +151,9 @@ public class PsiClassHelper {
             // 处理递归
             if (fieldClass != null) {
 //                todo: 处理递归问题 autoCorrelationCount
-                if(autoCorrelationCount > 0) return new HashMap();
+                if(autoCorrelationCount > 0) {
+                    return new HashMap();
+                }
                 if(fullName.equals(fieldClass.getQualifiedName())){
                     autoCorrelationCount ++;
                 }
@@ -392,7 +396,7 @@ public class PsiClassHelper {
         }
 
         PsiClass resolvePsiClass = ((PsiClassReferenceType) psiFieldType).resolve();
-        if (resolvePsiClass.getQualifiedName().equals("java.util.List")) {
+        if ("java.util.List".equals(resolvePsiClass.getQualifiedName())) {
             return true ;
         }
 
@@ -401,7 +405,7 @@ public class PsiClassHelper {
         }*/
 
         for (PsiType psiType : ((PsiClassReferenceType) psiFieldType).rawType().getSuperTypes()) {
-            if (psiType.getCanonicalText().equals("java.util.List")) {
+            if ("java.util.List".equals(psiType.getCanonicalText())) {
                 return true;
             }
         }

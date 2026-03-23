@@ -21,6 +21,7 @@ import com.intellij.util.ui.UIUtil;
 import com.zhaow.restful.common.RequestHelper;
 import com.zhaow.utils.JsonUtils;
 import com.zhaow.utils.ToolkitUtil;
+import com.zhaow.utils.PluginLogger;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -40,6 +41,7 @@ import java.util.Map;
 //import com.intellij.ui.components.JBPanelWithEmptyText;
 
 public class RestServiceDetail extends JBPanel implements ProjectComponent {
+    private final PluginLogger LOG;
     private static RestServiceDetail restServiceDetail;
     public JTextField urlField;
     public JPanel urlPanel;
@@ -53,6 +55,7 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
 
     public RestServiceDetail(Project project) {
         super();
+        this.LOG = new PluginLogger(RestServiceDetail.class, project);
         // Don't call initComponent here, it will be called by IntelliJ after GUI components are bound
     }
 
@@ -370,17 +373,21 @@ public class RestServiceDetail extends JBPanel implements ProjectComponent {
     }
 
     public void setMethodValue(String method) {
+        LOG.info("[RestServiceDetail] setMethodValue called, methodField is null: " + (methodField == null));
         if (methodField == null) {
             return;
         }
         methodField.setText(String.valueOf(method));
+        LOG.info("[RestServiceDetail] methodField.setText done: " + method);
     }
 
     public void setUrlValue(String url) {
+        LOG.info("[RestServiceDetail] setUrlValue called, urlField is null: " + (urlField == null));
         if (urlField == null) {
             return;
         }
         urlField.setText(url);
+        LOG.info("[RestServiceDetail] urlField.setText done: " + url);
     }
 
     private class TextAreaKeyAdapter extends KeyAdapter {
